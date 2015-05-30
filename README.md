@@ -1,7 +1,11 @@
 # moose-chemical
 
-This repository contains snippets and examples of chemical reaction simulation
-in MOOSE (using python scripting interface). 
+# Examples
+
+- [A very simple irreversible reaction](./notebook/simple_reaction_1.ipynb)
+
+
+# How to
 
 This is a work in progress for beta release. You are advised to look at
 `Demo/snippets` folder in official MOOSE repository mentioned at
