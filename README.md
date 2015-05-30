@@ -2,10 +2,12 @@
 
 # Examples
 
-- [A very simple irreversible reaction](./notebook/simple_reaction_1.ipynb)
-
+- [A simple irreversible reaction](./notebook/simple_reaction_irreversible.ipynb)
+- [A simple reversible reaction](./notebook/simple_reaction_reversible.ipynb)
 
 # How to
+
+## 
 
 This is a work in progress for beta release. You are advised to look at
 `Demo/snippets` folder in official MOOSE repository mentioned at
