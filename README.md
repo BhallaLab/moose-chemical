@@ -4,8 +4,9 @@
 
 - [A simple irreversible reaction](./notebook/simple_reaction_irreversible.ipynb)
 - [A simple reversible reaction](./notebook/simple_reaction_reversible.ipynb)
+- [A reversible reaction with multiple substrates and products](./notebook/reversible_reaction_multiple_subs_prds.ipynb)
 
-# How to
+# HOWTOs
 
 ## 
 
