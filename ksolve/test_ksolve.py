@@ -1,5 +1,5 @@
-# multiComptSigNeur.py --- 
-# Upi Bhalla NCBS Bangalore 2013.
+# test_ksolve.py --- 
+# Orignal item by Upi Bhalla NCBS Bangalore 2013.
 # Commentary: 
 
 # A toy compartmental neuronal + chemical model. The neuronal model is in
@@ -32,6 +32,8 @@
 # Floor, Boston, MA 02110-1301, USA.
 # 
 
+# modified by Dilawar Singh Wed Aug  5 19:21:19 2015
+
 # Code:
 
 import sys
@@ -39,6 +41,7 @@ import moose
 import moose.utils as mu
 import math
 import os
+import time
 
 EREST_ACT = -70e-3
 
@@ -402,7 +405,6 @@ def makeSolvers( elecDt ):
         stoich.compartment = moose.element( '/model/chem/neuroMesh' )
         stoich.ksolve = ksolve
         stoich.path = '/model/chem/##'
-        #stoich.method = 'rk5'
         moose.useClock( 5, '/model/ksolve', 'init' )
         moose.useClock( 6, '/model/ksolve', 'process' )
         # Here is the elec solver
@@ -508,7 +510,9 @@ def testCubeMultiscale( useSolver ):
     if ( useSolver ):
         makeSolvers( elecDt )
     moose.reinit()
+    t = time.time()
     moose.start( 1.0 )
+    print("Total time taken: %s sec for 1.0 sec of simulation" % (time.time() - t))
     dumpPlots( plotName )
 
 def main():
