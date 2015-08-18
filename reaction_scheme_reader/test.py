@@ -1,64 +1,15 @@
 import collections
 from chem_parser import yacc
 
-def atom_count(s):
-    """calculates the total number of atoms in the chemical equation
-    >>> atom_count("H2SO4")
-    7
-    >>>
+def test_equation(s):
+    yacc.parse(s)
+
+def main():
+    text = """
+    a[conc=1.0e-15] + b[conc=12.01] <- kf=0.12, kb=1.2 -> c[conc=0.0]
     """
-    count = 0
-    for atom in yacc.parse(s):
-        count += atom.count
-    return count
+    test_equation(text)
 
-def element_counts(s):
-    """calculates counts for each element in the chemical equation
-    >>> element_counts("CH3COOH")["C"]
-    2
-    >>> element_counts("CH3COOH")["H"]
-    4
-    >>>
-    """
-    
-    counts = collections.defaultdict(int)
-    for atom in yacc.parse(s):
-        counts[atom.symbol] += atom.count
-    return counts 
 
-######
-def assert_raises(exc, f, *args):
-    try:
-        f(*args)
-    except exc:
-        pass
-    else:
-        raise AssertionError("Expected %r" % (exc,))
-
-def test_element_counts():
-    assert element_counts("CH3COOH") == {"C": 2, "H": 4, "O": 2}
-    assert element_counts("Ne") == {"Ne": 1}
-    assert element_counts("") == {}
-    assert element_counts("NaCl") == {"Na": 1, "Cl": 1}
-    assert_raises(TypeError, element_counts, "Blah")
-    assert_raises(TypeError, element_counts, "10")
-    assert_raises(TypeError, element_counts, "1C")
-
-def test_atom_count():
-    assert atom_count("He") == 1
-    assert atom_count("H2") == 2
-    assert atom_count("H2SO4") == 7
-    assert atom_count("CH3COOH") == 8
-    assert atom_count("NaCl") == 2
-    assert atom_count("C60H60") == 120
-    assert_raises(TypeError, atom_count, "SeZYou")
-    assert_raises(TypeError, element_counts, "10")
-    assert_raises(TypeError, element_counts, "1C")
-
-def test():
-    test_atom_count()
-    test_element_counts()
-
-if __name__ == "__main__":
-    test()
-    print "All tests passed."
+if __name__ == '__main__':
+    main()

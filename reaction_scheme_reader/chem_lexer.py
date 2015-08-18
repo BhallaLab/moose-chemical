@@ -16,21 +16,27 @@ __status__           = "Development"
 import ply.lex as lex
 
 tokens = (
-    'NAME','NUMBER', 
+    'NAME','NUMBER', 'DECIMAL',
+    'COMMA',
     'PLUS','MINUS','TIMES','DIVIDE','EQUALS',
     'LPAREN','RPAREN',
+    'LEFT_REAC' , 'RIGHT_REAC',
     )
 
 # Tokens
 
-t_PLUS    = r'\+'
-t_MINUS   = r'-'
-t_TIMES   = r'\*'
-t_DIVIDE  = r'/'
-t_EQUALS  = r'='
-t_LPAREN  = r'\('
-t_RPAREN  = r'\)'
-t_NAME    = r'[a-zA-Z_][a-zA-Z0-9_]*'
+t_PLUS       = r'\+'
+t_MINUS      = r'-'
+t_TIMES      = r'\*'
+t_DIVIDE     = r'/'
+t_EQUALS     = r'= '
+t_LPAREN     = r'\['
+t_RPAREN     = r'\]'
+t_NAME       = r'[a-zA-Z_][a-zA-Z0-9_]*'
+t_LEFT_REAC  = r'<-'
+t_RIGHT_REAC = r'->'
+t_COMMA      = r','
+t_DECIMAL    = r'(\+|-)?[0-9]\+(\.[0-9]\+)?'
 
 def t_NUMBER(t):
     r'\d+'
