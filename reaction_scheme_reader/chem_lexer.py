@@ -21,22 +21,24 @@ tokens = (
     'PLUS','MINUS','TIMES','DIVIDE','EQUALS',
     'LPAREN','RPAREN',
     'LEFT_REAC' , 'RIGHT_REAC',
+    'EOL'
     )
 
 # Tokens
 
+t_EOL        = r';'
+t_LEFT_REAC  = r'<[-]+'
+t_RIGHT_REAC = r'[-]+>'
 t_PLUS       = r'\+'
 t_MINUS      = r'-'
 t_TIMES      = r'\*'
 t_DIVIDE     = r'/'
-t_EQUALS     = r'= '
+t_EQUALS     = r'='
 t_LPAREN     = r'\['
 t_RPAREN     = r'\]'
 t_NAME       = r'[a-zA-Z_][a-zA-Z0-9_]*'
-t_LEFT_REAC  = r'<-'
-t_RIGHT_REAC = r'->'
 t_COMMA      = r','
-t_DECIMAL    = r'(\+|-)?[0-9]\+(\.[0-9]\+)?'
+t_DECIMAL    = r'[0-9eE\.+-]+'
 
 def t_NUMBER(t):
     r'\d+'
@@ -59,10 +61,12 @@ def t_error(t):
     t.lexer.skip(1)
 
 precedence = (
+    ('left', 'RIGHT_REAC', 'MINUS'),
+    ('left', 'LEFT_REAC', 'MINUS'),
     ('left','PLUS','MINUS'),
     ('left','TIMES','DIVIDE'),
     ('right','UMINUS'),
     )
 
 
-lexer = lex.lex()
+lexer = lex.lex(debug=1)

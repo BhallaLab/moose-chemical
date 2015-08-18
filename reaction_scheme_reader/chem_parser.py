@@ -23,43 +23,46 @@ import moose
 import ply.yacc as yacc
         
 def p_error(p):
-    raise TypeError("unknown text at %r" % (p.value,))
+    print p
+    # raise TypeError("unknown text at %r" % (p.value,))
 
 def p_reaction(p):
     """
-    reaction : reactants LEFT_REAC params RIGHT_REAC  products
+    reaction : reactants LEFT_REAC params RIGHT_REAC  products EOL
     """
-    pass
+    print p
 
 def p_params(p):
     """
     params : param 
            | params COMMA param
     """
+    print p
 
 def p_reactants(p):
     """
     reactants : species 
               | reactants PLUS species
     """
-    pass
+    print p
 
 def p_products(p):
     """
     products : species
              | products PLUS species
     """
+    print p
 
 def p_param(p):
     """
     param : NAME EQUALS DECIMAL
     """
-    pass
+    print p
 
 def p_species(p):
     """
     species : NAME LPAREN params RPAREN
     """
-    print "Single species"
+    print p
 
 parser = yacc.yacc()

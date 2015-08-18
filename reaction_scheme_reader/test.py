@@ -6,7 +6,7 @@ def test_equation(s):
 
 def main():
     text = """
-    a[conc=1.0e-15] + b[conc=12.01] <- kf=0.12, kb=1.2 -> c[conc=0.0]
+    a[conc=1.0] + b[conc=12.01] <-- kf=0.12, kb=1.2 --> c[conc=0.0] ;
     """
     test_equation(text)
 
