@@ -27,8 +27,8 @@ tokens = (
 # Tokens
 
 t_EOL        = r';'
-t_LEFT_REAC  = r'<[-]+'
-t_RIGHT_REAC = r'[-]+>'
+t_LEFT_REAC  = r'<--'
+t_RIGHT_REAC = r'-->'
 t_PLUS       = r'\+'
 t_MINUS      = r'-'
 t_TIMES      = r'\*'
@@ -36,18 +36,9 @@ t_DIVIDE     = r'/'
 t_EQUALS     = r'='
 t_LPAREN     = r'\['
 t_RPAREN     = r'\]'
-t_NAME       = r'[a-zA-Z_][a-zA-Z0-9_]*'
 t_COMMA      = r','
-t_DECIMAL    = r'[0-9eE\.+-]+'
-
-def t_NUMBER(t):
-    r'\d+'
-    try:
-        t.value = int(t.value)
-    except ValueError:
-        print("Integer value too large %d", t.value)
-        t.value = 0
-    return t
+t_DECIMAL    = r'[-+]?\d+(\.\d+)?'
+t_NAME       = r'[a-zA-Z_][a-zA-Z0-9_]*'
 
 # Ignored characters
 t_ignore = " \t"
@@ -61,12 +52,10 @@ def t_error(t):
     t.lexer.skip(1)
 
 precedence = (
-    ('left', 'RIGHT_REAC', 'MINUS'),
-    ('left', 'LEFT_REAC', 'MINUS'),
     ('left','PLUS','MINUS'),
     ('left','TIMES','DIVIDE'),
     ('right','UMINUS'),
     )
 
 
-lexer = lex.lex(debug=1)
+lexer = lex.lex(debug=0)
