@@ -1,4 +1,5 @@
 digraph camkii_ring {
     edge[dir=both];
+    node[color=blue,share=circle]
     1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 1;
 }
