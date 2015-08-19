@@ -4,35 +4,13 @@ from graph_tool.all import *
 from numpy.random import *
 import sys, os, os.path
 import cairo
+from camkii_ring import camkii_ring
 
 seed(42)
 seed_rng(42)
 
 # We need some Gtk and gobject functions
 from gi.repository import Gtk, Gdk, GdkPixbuf, GObject
-
-# We will use the karate-club network
-camkiiRing_ = load_graph("camkii_ring.dot")
-pos_= sfdp_layout(camkiiRing_)
-
-# We will filter out vertices which are in the "Recovered" state, by masking
-# them using a property map.
-removed = camkiiRing_.new_vertex_property("bool")
-
-# Initialize all vertices to the S state
-state = camkiiRing_.new_vertex_property("int")
-state.a = 0
-
-# Images used to draw the nodes. They need to be loaded as cairo surfaces.
-unphospho_ = cairo.ImageSurface.create_from_png("_images/face-grin.png")
-phospho_ = cairo.ImageSurface.create_from_png("_images/zombie.png")
-
-vertex_sfcs = camkiiRing_.new_vertex_property("object")
-for v in camkiiRing_.vertices():
-    vertex_sfcs[v] = unphospho_
-
-# Newly infected nodes will be highlighted in red
-newlyPhosporylated = camkiiRing_.new_vertex_property("bool")
 
 # If True, the frames will be dumped to disk as images.
 offscreen = sys.argv[1] == "offscreen" if len(sys.argv) > 1 else False
@@ -42,26 +20,24 @@ if offscreen and not os.path.exists("./frames"):
 
 # This creates a GTK+ window with the initial graph layout
 if not offscreen:
-    win = GraphWindow(camkiiRing_, pos_, geometry=(500, 400),
-                      vertex_size=42,
-                      vertex_anchor=0,
-                      edge_color=[0.6, 0.6, 0.6, 1],
-                      vertex_surface=vertex_sfcs,
-                      vertex_halo=newlyPhosporylated,
-                      vertex_halo_size=1.2,
-                      vertex_halo_color=[0.8, 0, 0, 0.6]
-                      )
+    win = camkii_ring.graph_window(
+            geometry=(500, 400)
+            , vertex_size=42
+            , vertex_anchor=0
+            , edge_color=[0.6, 0.6, 0.6, 1]
+            , vertex_halo_size=1.2
+            , vertex_halo_color=[0.8, 0, 0, 0.6]
+            )
 else:
     count = 0
     win = Gtk.OffscreenWindow()
     win.set_default_size(500, 400)
-    win.graph = GraphWidget(camkiiRing_, pos,
-                            vertex_size=42,
-                            vertex_anchor=0,
-                            edge_color=[0.6, 0.6, 0.6, 1],
-                            vertex_surface=vertex_sfcs,
-                            vertex_halo=newlyPhosporylated,
-                            vertex_halo_color=[0.8, 0, 0, 0.6])
+    win.graph = camkii_ring.graph_window(
+            vertex_size=42
+            , vertex_anchor=0
+            , edge_color=[0.6, 0.6, 0.6, 1]
+            , vertex_halo_color=[0.8, 0, 0, 0.6]
+            )
     win.add(win.graph)
 
 
@@ -72,9 +48,9 @@ def update_state():
     removed.a = False
 
     # visit the nodes in random order
-    vs = list(camkiiRing_.vertices())
+    vs = list(camkii_ring.vertices())
     # Filter out the recovered vertices
-    camkiiRing_.set_vertex_filter(removed, inverted=True)
+    camkii_ring.set_vertex_filter(removed, inverted=True)
 
     # The following will force the re-drawing of the graph, and issue a
     # re-drawing of the GTK window.
