@@ -9,6 +9,8 @@ from camkii_ring import camkii_ring
 seed(42)
 seed_rng(42)
 
+steps_ = 0
+
 # We need some Gtk and gobject functions
 from gi.repository import Gtk, Gdk, GdkPixbuf, GObject
 
@@ -43,19 +45,18 @@ else:
 # This function will be called repeatedly by the GTK+ main loop, and we use it
 # to update the state according to the SIRS dynamics.
 def update_state():
-    print("I am here")
-    # visit the nodes in random order
-    vs = list(camkii_ring.ring.vertices())
-    # Filter out the recovered vertices
-
-    # The following will force the re-drawing of the graph, and issue a
-    # re-drawing of the GTK window.
+    global steps_
+    steps_ += 1
+    camkii_ring.update_state()
     win.graph.regenerate_surface()
     win.graph.queue_draw()
-
     # We need to return True so that the main loop will call this function more
     # than once.
-    return True
+    if steps_ < 1000:
+        return True
+    else:
+        print("Done 1000 steps")
+        return False
 
 
 def main():
