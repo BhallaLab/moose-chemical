@@ -23,14 +23,15 @@ import moose
 import ply.yacc as yacc
         
 def p_error(p):
-    print p
-    # raise TypeError("unknown text at %r" % (p.value,))
+    raise TypeError("unknown text at %r" % (p.value,))
+
+# TODO: Add rule for parsing space.
 
 def p_reaction(p):
     """
     reaction : reactants LEFT_REAC params RIGHT_REAC  products EOL
     """
-    print p
+    print dir(p)
 
 def p_params(p):
     """
