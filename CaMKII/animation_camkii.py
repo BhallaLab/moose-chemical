@@ -40,31 +40,18 @@ else:
             )
     win.add(win.graph)
 
-
 # This function will be called repeatedly by the GTK+ main loop, and we use it
 # to update the state according to the SIRS dynamics.
 def update_state():
-    newlyPhosporylated.a = False
-    removed.a = False
-
+    print("I am here")
     # visit the nodes in random order
-    vs = list(camkii_ring.vertices())
+    vs = list(camkii_ring.ring.vertices())
     # Filter out the recovered vertices
-    camkii_ring.set_vertex_filter(removed, inverted=True)
 
     # The following will force the re-drawing of the graph, and issue a
     # re-drawing of the GTK window.
     win.graph.regenerate_surface()
     win.graph.queue_draw()
-
-    # if doing an offscreen animation, dump frame to disk
-    if offscreen:
-        global count
-        pixbuf = win.get_pixbuf()
-        pixbuf.savev(r'./frames/zombies%06d.png' % count, 'png', [], [])
-        if count > max_count:
-            sys.exit(0)
-        count += 1
 
     # We need to return True so that the main loop will call this function more
     # than once.
