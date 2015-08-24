@@ -1,8 +1,17 @@
 # This model the following reaction
-#  a + b <-------> 2c, with kf = 2.0, and kb = 1.0; 
-#  Following expression should describe the process.
-#           expr: dc/dt = k1*(1-x)*(2-x)-0.1*x^2
+#  a + b <-------> c,
+#  and initial concentration of a = 1 and b = 2
+#
+#  Following expression describes the process.
+#   
+#   dc/dt = k11*a + k1*b
+#
+# Here the limitation is that this format can only take one, expression of each
+# product.
+#
 # This should produce the similar result as of ./simple.yml 
+#
+# Initial concentration of species can be used by suffixing it with _init .
 ---
 compartment:
     - synapse:
@@ -17,7 +26,7 @@ compartment:
         reaction:
             r1:
                 subs : [a, b]
-                prds: [c]
+                prds: [c, c]
                 k1: 2.0
-                k2: 1.0
-                expr: k1*(1-x)*(2-x)-0.1*x*x
+                k11: 1.0
+                expr: k1*(a_init-x)*(b_init-x)-k11*(c_init+x)^2

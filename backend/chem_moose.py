@@ -127,33 +127,55 @@ def add_reaction_intercompartment(compt, reac_name, attribs):
 
 def format_expression(expr, moose_reac, attribs):
     """
-    Add an expression to moose_reac
+    Add an expression to moose_reac. Return a mapping of x's and variables to
+    map to.
     """
+    # replace the init concentration by their value, if any. 
+    subs, prds = [], []
+    for pp in moose_reac.neighbors['sub']:
+        for p in pp: subs.append(p)
+    for pp in moose_reac.neighbors['prd']:
+        for p in pp: prds.append(p)
+    for p in subs + prds:
+        key = '%s_init' % p.name 
+        value = p.concInit
+        expr = expr.replace(key, "%s" % value)
+
+    if "_init" in expr:
+        utils.fatal([ "Malformed expression: %s." % expr
+            , "One or more _init don't exists in compartment"]
+            )
+
     # replace the constant with their values.
-    for attrib in attribs:
+    sorted_attribs = sorted(attribs, key=lambda x: 1.0/len(x))
+    for attrib in sorted_attribs:
         key, val = attrib, attribs[attrib]
         try:
             val = float(val)
-            print expr
-            print key, val
+            expr = expr.replace(key, "%s" % val)
         except:
             # This is not a constant.
             pass
-    new_expr =  expr
-    quit()
-    return new_expr
+    # By now all we should have in our expressions are either decimal numbers or
+    # variables. 
+    # finally we rewrite x as x0.
+    expr = expr.replace('x', 'x0')
+    return expr
     
 def add_expression_to_reac(reacElem, attribs):
     """Setup MOOSE reaction with moose.Function having expression
     """
     expr = attribs['expr']
-    _logger.info("Adding expression %s" % expr)
     expr = format_expression(expr, reacElem, attribs)
     # Create a function.
     funcPath = '%s/func' % reacElem.path
     func = moose.Function(funcPath)
     func.mode = 1
+    _logger.info("Adding expression %s" % expr)
     func.expr = expr
+
+    # Take any product (they all increase with same rate) and setup the message.
+    
 
     # The output of function must decrement the values of substrate and increase
     # the value of product.
@@ -163,7 +185,6 @@ def add_expression_to_reac(reacElem, attribs):
     for pp in reacElem.neighbors['prd']:
         for p in pp:
             func.connect('valueOut', s, 'increment')
-    
 
 
 def add_global_reaction(reac):
