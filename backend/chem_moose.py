@@ -17,6 +17,7 @@ import moose
 import moose.utils as mu
 import warnings
 import utils
+import re
 
 import logging
 logging.basicConfig(level=logging.DEBUG,
@@ -124,10 +125,45 @@ def add_reaction_intercompartment(compt, reac_name, attribs):
         _logger.info("Rate constants: kf=%s, kb=%s" % (reac.Kf, reac.Kb))
     return reac
 
+def format_expression(expr, moose_reac, attribs):
+    """
+    Add an expression to moose_reac
+    """
+    # replace the constant with their values.
+    for attrib in attribs:
+        key, val = attrib, attribs[attrib]
+        try:
+            val = float(val)
+            print expr
+            print key, val
+        except:
+            # This is not a constant.
+            pass
+    new_expr =  expr
+    quit()
+    return new_expr
+    
 def add_expression_to_reac(reacElem, attribs):
     """Setup MOOSE reaction with moose.Function having expression
     """
     expr = attribs['expr']
+    _logger.info("Adding expression %s" % expr)
+    expr = format_expression(expr, reacElem, attribs)
+    # Create a function.
+    funcPath = '%s/func' % reacElem.path
+    func = moose.Function(funcPath)
+    func.mode = 1
+    func.expr = expr
+
+    # The output of function must decrement the values of substrate and increase
+    # the value of product.
+    for ss in reacElem.neighbors['sub']:
+        for s in ss:
+            func.connect('valueOut', s, 'decrement')
+    for pp in reacElem.neighbors['prd']:
+        for p in pp:
+            func.connect('valueOut', s, 'increment')
+    
 
 
 def add_global_reaction(reac):
