@@ -29,7 +29,7 @@ def make_model():
     compt.volume = 1e-20
     a = moose.Pool('/compartment/a')
     b = moose.Pool('/compartment/b')
-    a.nInit, b.nInit = 30, 10
+    a.nInit, b.nInit = 300, 100
     c = moose.Pool('/compartment/c')
     c.nInit = 0
     for x in [a, b, c]:
@@ -38,20 +38,23 @@ def make_model():
     reac.connect('sub', a, 'reac')
     reac.connect('sub', b, 'reac')
     reac.connect('prd', c, 'reac')
-    reac.Kf = 3.0
-    reac.Kb = 1.0
+    reac.Kf = 30
+    reac.Kb = 10
+    return compt
 
-def setup_solver():
-    gsolve = moose.Gsolve('/gsolve')
-    stoich = moose.Stoich('/stoich')
-    stoich.compartment = moose.Compartment('/compartment')
+def setup_solver(compt):
+    gsolve = moose.Gsolve('/compartment/gsolve')
+    stoich = moose.Stoich('/compartment/stoich')
+    stoich.compartment = compt
     stoich.ksolve = gsolve
     stoich.path = '/compartment/##'
+    for i in range(10, 16):
+        moose.setClock(i, 0.01)
 
 def main():
     global records_
-    make_model()
-    setup_solver()
+    compt = make_model()
+    setup_solver(compt)
     moose.reinit()
     moose.start(30)
     mu.plotRecords( records_ )
