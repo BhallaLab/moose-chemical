@@ -21,7 +21,7 @@ records_ = {}
 def add_table(elem):
     global records_
     t = moose.Table2('%s/table' % elem.path)
-    t.connect('requestOut', elem, 'getConc')
+    t.connect('requestOut', elem, 'getN')
     records_[elem.name] = t
 
 def make_model():
@@ -38,8 +38,8 @@ def make_model():
     reac.connect('sub', a, 'reac')
     reac.connect('sub', b, 'reac')
     reac.connect('prd', c, 'reac')
-    reac.Kf = 30
-    reac.Kb = 10
+    reac.Kf = 50
+    reac.Kb = 0.4
     return compt
 
 def setup_solver(compt):
@@ -48,15 +48,13 @@ def setup_solver(compt):
     stoich.compartment = compt
     stoich.ksolve = gsolve
     stoich.path = '/compartment/##'
-    for i in range(10, 16):
-        moose.setClock(i, 0.01)
 
 def main():
     global records_
     compt = make_model()
     setup_solver(compt)
     moose.reinit()
-    moose.start(30)
+    moose.start(50)
     mu.plotRecords( records_ )
 
 if __name__ == '__main__':
