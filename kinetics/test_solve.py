@@ -34,7 +34,7 @@ def make_model():
     c.nInit = 0
     for x in [a, b, c]:
         add_table(x)
-    reac = moose.Reac('/reac')
+    reac = moose.Reac('/compartment/reac')
     reac.connect('sub', a, 'reac')
     reac.connect('sub', b, 'reac')
     reac.connect('prd', c, 'reac')
