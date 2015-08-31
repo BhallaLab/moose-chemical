@@ -18,7 +18,7 @@ class TestGvChem( unittest.TestCase ):
         tables = chem2moose.main(args)
         a, c = tables['a'], tables['c']
         b = tables['b']
-        self.assertAlmostEqual(c.vector[-1], 1.1279)
+        self.assertAlmostEqual(c.vector[-1], 1.12794913)
 
     def test_multiple(self):
         global args
