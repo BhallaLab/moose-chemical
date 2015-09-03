@@ -25,8 +25,8 @@ class TestGvChem( unittest.TestCase ):
         args['model_file'] = '_models/simple_expr.yml'
         tables = chem2moose.main(args)
         a, b, c = tables['a'], tables['b'], tables['c']
-        print a.vector[-1]
-        print c.vector[-1]
+        print "a", a.vector[-1]
+        print "c", c.vector[-1]
 
 
 
