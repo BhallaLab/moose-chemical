@@ -20,10 +20,14 @@ class TestGvChem( unittest.TestCase ):
         b = tables['b']
         self.assertAlmostEqual(c.vector[-1], 1.12794913)
 
-    def test_multiple(self):
+    def test_simple_expr(self):
         global args
-        #args['model_file'] = '../_models/multiply_reaction.dot'
-        #chem2moose.main(args)
+        args['model_file'] = '_models/simple_expr.yml'
+        tables = chem2moose.main(args)
+        a, b, c = tables['a'], tables['b'], tables['c']
+        print a.vector[-1]
+        print c.vector[-1]
+
 
 
 if __name__ == '__main__':

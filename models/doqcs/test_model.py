@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """test_model.py: 
 
     Some test function to test the kkit model.
@@ -27,20 +28,20 @@ def main():
         model = moose.readSBML(modelname, '/model')
     else:
         #kkit.visualize(modelname)
-        model = moose.loadModel(modelname, '/model', 'gsl')
+        model = moose.loadModel(modelname, '/model', 'gssa')
     tables = moose.wildcardFind('/##[TYPE=Table2]')
     records = {}
     for t in tables: records[t.path.split('/')[-1]] = t
 
     c = moose.Clock('/clock')
-    #print c.dts
-    for i in range(10, 16):
-        moose.setClock(i, 0.0001)
+    #for i in range(10, 16):
+    #    moose.setClock(i, 0.001)
 
     moose.reinit()
-    moose.start(100)
+    moose.start(200)
 
-    mu.plotRecords(records, subplot=True)
+    outfile = '%s.png' % modelname
+    mu.plotRecords(records, subplot=True, outfile=outfile)
 
 if __name__ == '__main__':
     main()

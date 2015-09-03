@@ -11,7 +11,7 @@
 #
 # This should produce the similar result as of ./simple.yml 
 #
-# Initial concentration of species can be used by suffixing it with _init .
+# Initial concentration of species can be used by suffixing it with #0 .
 ---
 compartment:
     - synapse:
@@ -29,4 +29,4 @@ compartment:
                 prds: [c, c]
                 k1: 2.0
                 k11: 1.0
-                expr: k1*(a_init-x)*(b_init-x)-k11*(c_init+x)^2
+                expr: k1*(a#0-x)*(b#0-x)-k11*(c#0+x)^2

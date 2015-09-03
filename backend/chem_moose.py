@@ -137,7 +137,7 @@ def format_expression(expr, moose_reac, attribs):
     for pp in moose_reac.neighbors['prd']:
         for p in pp: prds.append(p)
     for p in subs + prds:
-        key = '%s_init' % p.name 
+        key = '%s#0' % p.name 
         value = p.concInit
         expr = expr.replace(key, "%s" % value)
 

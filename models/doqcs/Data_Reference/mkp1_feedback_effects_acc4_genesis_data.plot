@@ -1,4 +1,3 @@
-
 /newplot
 /plotname /graphs/conc1/MAPK*.Co
 0	0
