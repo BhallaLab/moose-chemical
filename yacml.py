@@ -20,11 +20,14 @@ from backend import chem_moose
 import config
 import logging
 
-_logger = logging.getLogger('yacml')
-_logger.addHandler(config.console)
+logger_ = logging.getLogger('yacml')
 
 def main(args):
+    config.args_ = args
     modelFile = args['model_file']
+
+    config.add_console_stream(logger_)
+
     model = parser_yml.parse(modelFile)
     if args['solver'] == 'moose':
         chem_moose.to_moose(model)
@@ -38,9 +41,10 @@ def main(args):
 if __name__ == '__main__':
     import argparse
     # Argument parser.
-    description = '''parser'''
+    description = '''YACML: Yet Another Chemical Markup Language'''
     argp = argparse.ArgumentParser(description=description)
-    argp.add_argument('--sim_time', '-st', metavar='variable'
+    argp.add_argument('--sim_time', '-st'
+            , metavar='variable'
             , required = True
             , type = float
             , help = 'A generic option'
@@ -67,6 +71,13 @@ if __name__ == '__main__':
             , default = None
             , type = str
             , help = "Name of the plot file"
+            )
+
+    argp.add_argument('--log', '-l'
+            , required = False
+            , default = 'warning'
+            , type = str
+            , help = 'Debug levels: [debug, info, warning, error, critical]'
             )
 
     class Args: pass 

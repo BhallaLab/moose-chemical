@@ -8,6 +8,7 @@ args = {
     'plot' : False,
     'outfile' : None,
     'sim_time' : 30,
+    'log' : 'debug'
     }
 
 class TestGvChem( unittest.TestCase ):
