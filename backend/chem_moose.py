@@ -192,7 +192,7 @@ def to_moose(ymlmodel, **kwargs):
 
 def run(args, **kwargs):
     for i in range(10, 16):
-        moose.setClock(i, 0.001)
+        moose.setClock(i, 0.0001)
     moose.reinit()
     moose.start(args['sim_time'])
     tables = moose.wildcardFind('/tables/##[TYPE=Table2]')

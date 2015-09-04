@@ -34,10 +34,15 @@ class TestGvChem( unittest.TestCase ):
     def test_simple_2c(self):
         global args
         args['model_file'] = '_models/simple_2c.yml'
+        moose.delete('/synapse')
         tables = yacml.main(args)
         a, b, c = tables['a'], tables['b'], tables['c']
         real, computed= 0.719224, c.vector[-1]
         error = abs((real - computed) / real)
+        mu.plotRecords( 
+                { 'a' : a, 'b' : b, 'c' : c }
+                , outfile = 'simple_test_2c.png'
+                )
         steady_state = c.vector[-1]**2 / (a.vector[-1] * b.vector[-1])
         #print("++ Solution: %s, computed: %s, error: %s" % (real, computed, error))
         print("|| Steady state: %s" % steady_state)
