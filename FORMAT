@@ -1,0 +1,13 @@
+# Reaction
+    
+[substrate] <---> [products]
+
+e.g.
+    a <--> b
+    a + a <---> b + c
+    a + a + a + b + c + c <--> d + d + d + n
+
+etc. There is no multiplication factor; Use addition.
+
+Either rate constant of expression of kinetics must be provided. Only one
+kinetic expression must be given. 
