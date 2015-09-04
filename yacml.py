@@ -26,8 +26,6 @@ def main(args):
     config.args_ = args
     modelFile = args['model_file']
 
-    config.add_console_stream(logger_)
-
     model = parser_yml.parse(modelFile)
     if args['solver'] == 'moose':
         chem_moose.to_moose(model)

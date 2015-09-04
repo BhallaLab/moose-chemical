@@ -29,14 +29,5 @@ log_levels_ = {
 logging.basicConfig(level=logging.DEBUG,
     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
     datefmt='%m-%d %H:%M',
-    filename='__yacml__.log',
-    filemode='w')
-
-def add_console_stream(logger):
-    """Setup a console logger"""
-    global args_
-    console = logging.StreamHandler()
-    console.setLevel(log_levels_.get(args_['log'], 'warning'))
-    formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-    console.setFormatter(formatter)
-    logger.addHandler(console)
+    filemode='w'
+    )
