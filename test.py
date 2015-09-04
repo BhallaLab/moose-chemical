@@ -1,13 +1,15 @@
 import unittest
 import sys
 import yacml
+import moose.utils as mu
+import moose
 
 class Args: pass
 args = {
     'solver' : 'moose',
     'plot' : False,
     'outfile' : None,
-    'sim_time' : 30,
+    'sim_time' : 10,
     'log' : 'debug'
     }
 
@@ -17,17 +19,24 @@ class TestGvChem( unittest.TestCase ):
         global args
         args['model_file'] = '_models/simple.yml'
         tables = yacml.main(args)
-        a, c = tables['a'], tables['c']
-        b = tables['b']
-        self.assertAlmostEqual(c.vector[-1], 1.12794913)
+        a, b, c = tables['a'], tables['b'], tables['c']
+        mu.plotRecords(
+                { 'a' : a, 'b' : b, 'c' : c }
+                , outfile = 'simple_test.png'
+                )
+        real, computed= 0.719224, c.vector[-1]
+        error = abs((real - computed) / real)
+        print("++ Solution: %s, computed: %s, error: %s" % (real, computed, error))
+        self.assertTrue((real - computed) / real < 0.0001)
 
-    def test_simple_expr(self):
+    def test_simple_2c(self):
         global args
-        args['model_file'] = '_models/simple_expr.yml'
+        args['model_file'] = '_models/simple_2c.yml'
         tables = yacml.main(args)
         a, b, c = tables['a'], tables['b'], tables['c']
-        print "a", a.vector[-1]
-        print "c", c.vector[-1]
+        real, computed= 0.719224, c.vector[-1]
+        print("++ Solution: %s, computed: %s, error: %s" % (real, computed, error))
+        self.assertTrue((real - computed) / real < 0.0001)
 
 
 

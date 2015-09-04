@@ -13,6 +13,6 @@ compartment:
         reaction:
             r1:
                 subs : [a, b]
-                prds: c
+                prds: [c, c]
                 kf: 2.0
                 kb: 1.0

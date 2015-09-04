@@ -36,6 +36,7 @@ def add_recorder(moose_pool):
 def add_species(compt, species, attribs):
     """Add a species under compartment """
     _logger.info("Adding species %s under %s" % (species, compt.path))
+    _logger.debug("++ With attributes: %s" % attribs)
 
     poolPath = "%s/%s" % (compt.path, species)
     buffered = attribs.get('buffered', False)  
