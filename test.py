@@ -1,6 +1,6 @@
 import unittest
 import sys
-import chem2moose
+import yacml
 
 class Args: pass
 args = {
@@ -15,7 +15,7 @@ class TestGvChem( unittest.TestCase ):
     def test_simple(self):
         global args
         args['model_file'] = '_models/simple.yml'
-        tables = chem2moose.main(args)
+        tables = yacml.main(args)
         a, c = tables['a'], tables['c']
         b = tables['b']
         self.assertAlmostEqual(c.vector[-1], 1.12794913)
@@ -23,7 +23,7 @@ class TestGvChem( unittest.TestCase ):
     def test_simple_expr(self):
         global args
         args['model_file'] = '_models/simple_expr.yml'
-        tables = chem2moose.main(args)
+        tables = yacml.main(args)
         a, b, c = tables['a'], tables['b'], tables['c']
         print "a", a.vector[-1]
         print "c", c.vector[-1]

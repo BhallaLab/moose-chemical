@@ -14,9 +14,14 @@ __email__            = "dilawars@ncbs.res.in"
 __status__           = "Development"
 
 
-from config import logger_
 from parser import parser_yml
 from backend import chem_moose
+
+import config
+import logging
+
+_logger = logging.getLogger('yacml')
+_logger.addHandler(config.console)
 
 def main(args):
     modelFile = args['model_file']

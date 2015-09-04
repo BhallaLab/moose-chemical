@@ -14,12 +14,14 @@ __email__            = "dilawars@ncbs.res.in"
 __status__           = "Development"
 
 import logging
+
 logging.basicConfig(level=logging.DEBUG,
     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
     datefmt='%m-%d %H:%M',
     filename='__yacml__.log',
     filemode='w')
+
 console = logging.StreamHandler()
-console.setLevel(logging.INFO)
+console.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
 console.setFormatter(formatter)

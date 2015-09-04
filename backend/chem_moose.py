@@ -18,10 +18,10 @@ import moose.utils as mu
 import warnings
 import utils
 import re
-
+import config 
 import logging
+
 _logger = logging.getLogger('yacml.moose')
-_logger.addHandler(console)
 
 table_path_ = '/tables'
 moose.Neutral(table_path_)
