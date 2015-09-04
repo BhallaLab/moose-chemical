@@ -103,12 +103,12 @@ def add_reaction_intercompartment(compt, reac_name, attribs):
     _logger.info("Adding reaction under %s" % reacPath)
     reac = moose.Reac(reacPath)
     for sub in attribs.get('subs', []): 
-        _logger.debug("++ Adding substrate: %s" % sub)
         subPath = moose.Neutral('%s/%s' % (compt.path, sub))
+        _logger.debug("++ Adding substrate: %s" % subPath)
         reac.connect('sub', subPath, 'reac')
     for prd in attribs.get('prds', []): 
-        _logger.debug("++ Adding product: %s" % prd)
         prdPath = get_molecule_path(compt, prd)
+        _logger.debug("++ Adding product: %s" % prdPath)
         reac.connect('prd', prdPath, 'reac')
 
     if attribs.get('expr', None) is not None:
