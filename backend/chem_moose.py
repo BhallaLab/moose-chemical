@@ -20,16 +20,7 @@ import utils
 import re
 
 import logging
-logging.basicConfig(level=logging.DEBUG,
-    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-    datefmt='%m-%d %H:%M',
-    filename='default.log',
-    filemode='w')
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-console.setFormatter(formatter)
-_logger = logging.getLogger('cv2moose.to_moose')
+_logger = logging.getLogger('yacml.moose')
 _logger.addHandler(console)
 
 table_path_ = '/tables'
@@ -111,9 +102,11 @@ def add_reaction_intercompartment(compt, reac_name, attribs):
     _logger.info("Adding reaction under %s" % reacPath)
     reac = moose.Reac(reacPath)
     for sub in attribs.get('subs', []): 
+        _logger.debug("++ Adding substrate: %s" % sub)
         subPath = moose.Neutral('%s/%s' % (compt.path, sub))
         reac.connect('sub', subPath, 'reac')
     for prd in attribs.get('prds', []): 
+        _logger.debug("++ Adding product: %s" % prd)
         prdPath = get_molecule_path(compt, prd)
         reac.connect('prd', prdPath, 'reac')
 
@@ -122,7 +115,7 @@ def add_reaction_intercompartment(compt, reac_name, attribs):
     else:
         reac.Kf = float(attribs['kf'])
         reac.Kb = float(attribs['kb'])
-        _logger.info("Rate constants: kf=%s, kb=%s" % (reac.Kf, reac.Kb))
+        _logger.debug("Rate constants: kf=%s, kb=%s" % (reac.Kf, reac.Kb))
     return reac
 
 def format_expression(expr, moose_reac, attribs):
@@ -175,8 +168,6 @@ def add_expression_to_reac(reacElem, attribs):
     func.expr = expr
 
     # Take any product (they all increase with same rate) and setup the message.
-    
-
     # The output of function must decrement the values of substrate and increase
     # the value of product.
     for ss in reacElem.neighbors['sub']:
@@ -200,7 +191,7 @@ def to_moose(ymlmodel, **kwargs):
 
 def run(args, **kwargs):
     for i in range(10, 16):
-        moose.setClock(i, 0.01)
+        moose.setClock(i, 0.001)
     moose.reinit()
     moose.start(args['sim_time'])
     tables = moose.wildcardFind('/tables/##[TYPE=Table2]')

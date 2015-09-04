@@ -1,1 +1,3 @@
-This small library loads a chemical model described in dot language.
+YACML
+
+    Yet Another Chemical Markup Language

@@ -4,4 +4,4 @@ if [ $# -lt 1 ]; then
     exit
 fi
 model_path="$1"
-python ./chem2moose.py -st 20 -f $model_path --solver moose -p -o ${model_path}.png
+python ./yacml.py -st 20 -f $model_path --solver moose -p -o ${model_path}.png
