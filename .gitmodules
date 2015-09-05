@@ -1,0 +1,3 @@
+[submodule "models/ChemicalModels"]
+	path = models/ChemicalModels
+	url = git@github.com:MadhurimaPaul/ChemicalModels
