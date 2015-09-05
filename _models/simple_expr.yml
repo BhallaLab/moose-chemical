@@ -28,4 +28,4 @@ compartment:
                 prds: [c, c]
                 k1: 2.0
                 k11: 1.0
-                expr: k1*(a#0-x/2)*(b#0-x/2)-k11*(c#0+x)^2
+                expr: k1*(a#0-x/2)*(b#0-x/2)-k11*(c#0+x)
