@@ -14,7 +14,7 @@
 ---
 compartment:
     - synapse:
-        volume: 1e-12
+        volume: 1e-5
         species:
             a : 
                 conc_init : 1
@@ -28,4 +28,4 @@ compartment:
                 prds: [c, c]
                 k1: 2.0
                 k11: 1.0
-                expr: k1*(a#0-x/2)*(b#0-x/2)-k11*(c#0+x)
+                expr: k1*(a#0-0.5*x)*(b#0-0.5*x)-k11*(c#0+x)^2

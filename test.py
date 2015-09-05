@@ -13,7 +13,7 @@ args = {
     'log' : 'debug'
     }
 
-class TestGvChem( unittest.TestCase ):
+class TestYACML( unittest.TestCase ):
 
     def test_simple(self):
         global args
@@ -51,7 +51,8 @@ class TestGvChem( unittest.TestCase ):
     def test_simple_expr(self):
         global args
         args['model_file'] = '_models/simple_expr.yml'
-        moose.delete('/synapse')
+        try: moose.delete('/synapse')
+        except: pass
         tables = yacml.main(args)
         a, b, c = tables['a'], tables['b'], tables['c']
         real, computed= 1.12311, c.vector[-1]
@@ -68,4 +69,9 @@ class TestGvChem( unittest.TestCase ):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    runner = unittest.TextTestRunner()
+    suite = unittest.TestSuite()
+    tests = ['test_simple', 'test_simple_2c', 'test_simple_expr']
+    for t in tests[-1:]:
+        suite.addTest(TestYACML(t))
+    runner.run(suite)
