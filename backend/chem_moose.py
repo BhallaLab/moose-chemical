@@ -173,10 +173,12 @@ def add_expression_to_reac(reacElem, attribs):
     # the value of product.
     for ss in reacElem.neighbors['sub']:
         for s in ss:
+            _logger.debug("++ Decrementing sub: %s" % s)
             func.connect('valueOut', s, 'decrement')
     for pp in reacElem.neighbors['prd']:
-        for p in pp:
-            func.connect('valueOut', s, 'increment')
+        for p in pp: 
+            _logger.debug("++ Incrementing prd: %s" % p)
+            func.connect('valueOut', p, 'increment')
 
 
 def add_global_reaction(reac):
