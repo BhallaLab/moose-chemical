@@ -1,4 +1,4 @@
-"""gvmoose.py: 
+"""main.py: 
 
     Load a graphviz chemical model into MOOSE.
 
@@ -19,13 +19,14 @@ import config
 import logging
 
 logger_ = logging.getLogger('yacml')
+logger_.setLevel(logging.DEBUG)
 
 def main(args):
     config.args_ = args
     modelFile = args['model_file']
     if args['solver'] == 'moose':
-        gv.
-        return chem_moose.run(args)
+        gv.to_moose(modelFile)
+        gv.run(args['sim_time'])
     elif args['solver'] == "scipy":
         logger_.error("Solver scipy is still not supported")
     else:

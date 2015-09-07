@@ -164,7 +164,7 @@ def add_expression_to_reac(reacElem, attribs):
     # Create a function.
     funcPath = '%s/func' % reacElem.path
     func = moose.Function(funcPath)
-    func.mode = 1
+    func.mode = 0
     _logger.debug("++ Adding expression %s" % expr)
     func.expr = expr
 
@@ -174,13 +174,13 @@ def add_expression_to_reac(reacElem, attribs):
     for ss in reacElem.neighbors['sub']:
         for i, s in enumerate(ss):
             _logger.debug("+ Setting msg: decrementing sub: %s" % s)
-            func.connect('valueOut', s, 'decrement')
+            func.connect('valueOut', s, 'setConc')
     for pp in reacElem.neighbors['prd']:
         _logger.debug("++ Using prd as input to function")
+        moose.connect(func, 'requestOut', pp[-1], 'getConc')
         for p in pp: 
-            moose.connect(func, 'requestOut', p, 'getN')
             _logger.debug("++ Setting msg: incrementing prd: %s" % p)
-            func.connect('valueOut', p, 'increment')
+            func.connect('valueOut', p, 'setConc')
 
 
 def add_global_reaction(reac):

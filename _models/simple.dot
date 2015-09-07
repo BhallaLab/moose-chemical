@@ -1,0 +1,7 @@
+digraph simple {
+
+    a [ conc_init = 1 ];
+    b [ conc_init = 0 ];
+
+    a <-> b [ kf = 2.0, kb = 1.0 ];
+}

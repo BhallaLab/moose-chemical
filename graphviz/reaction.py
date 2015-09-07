@@ -13,10 +13,12 @@ __maintainer__       = "Dilawar Singh"
 __email__            = "dilawars@ncbs.res.in"
 __status__           = "Development"
 
-from config import logger_
 import warnings
 import moose
 import ast
+
+import logging
+logger_ = logging.getLogger('gv.reacion')
 
 def constant_and_variables(expr, constants):
     # consts 
