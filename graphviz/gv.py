@@ -22,6 +22,7 @@ import operator as ops
 import sys
 from collections import defaultdict
 import reaction
+import matplotlib.pyplot as plt
 
 import logging
 logger_ = logging.getLogger('gv.graphviz')
@@ -214,6 +215,9 @@ def writeSBMLModel(dot_file, outfile = None):
 def to_moose(dot_file, outfile = None):
     model = DotModel(dot_file)
     model.load()
+    tempFile = '%s_out.dot' % dot_file
+    logger_.info("Writing to graphviz file: %s" % tempFile)
+    nx.write_dot(model.G, tempFile)
 
 def run(simtime):
     moose.reinit()
