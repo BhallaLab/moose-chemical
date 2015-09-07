@@ -153,7 +153,7 @@ def format_expression(expr, moose_reac, attribs):
     # By now all we should have in our expressions are either decimal numbers or
     # variables. 
     # finally we rewrite x as x0.
-    expr = expr.replace('x', 'x0')
+    expr = expr.replace('x', 'y0')
     return expr
     
 def add_expression_to_reac(reacElem, attribs):
@@ -165,19 +165,21 @@ def add_expression_to_reac(reacElem, attribs):
     funcPath = '%s/func' % reacElem.path
     func = moose.Function(funcPath)
     func.mode = 1
-    _logger.info("Adding expression %s" % expr)
+    _logger.debug("++ Adding expression %s" % expr)
     func.expr = expr
 
     # Take any product (they all increase with same rate) and setup the message.
     # The output of function must decrement the values of substrate and increase
     # the value of product.
     for ss in reacElem.neighbors['sub']:
-        for s in ss:
-            _logger.debug("++ Decrementing sub: %s" % s)
+        for i, s in enumerate(ss):
+            _logger.debug("+ Setting msg: decrementing sub: %s" % s)
             func.connect('valueOut', s, 'decrement')
     for pp in reacElem.neighbors['prd']:
+        _logger.debug("++ Using prd as input to function")
         for p in pp: 
-            _logger.debug("++ Incrementing prd: %s" % p)
+            moose.connect(func, 'requestOut', p, 'getN')
+            _logger.debug("++ Setting msg: incrementing prd: %s" % p)
             func.connect('valueOut', p, 'increment')
 
 
