@@ -27,6 +27,7 @@ def main(args):
     if args['solver'] == 'moose':
         model = gv.DotModel(modelFile)
         model.run(args)
+        return model
     elif args['solver'] == "scipy":
         logger_.error("Solver scipy is still not supported")
     else:

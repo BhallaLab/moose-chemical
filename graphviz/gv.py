@@ -217,12 +217,15 @@ class DotModel():
         sim_time = simulation time
         outfile = File to save the results.
         """
+        for i in range(10, 16):
+            moose.setClock(i, 1e-2)
         moose.reinit()
         moose.start(float(args['sim_time']))
-        mu.plotRecords(self.tables
-                , outfile = args['outfile']
-                , subplot = True
-                )
+        if args['outfile']:
+            mu.plotRecords(self.tables
+                    , outfile = args['outfile']
+                    , subplot = True
+                    )
 
 def writeSBMLModel(dot_file, outfile = None):
     model = DotModel(dot_file)
