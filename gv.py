@@ -25,8 +25,8 @@ def main(args):
     config.args_ = args
     modelFile = args['model_file']
     if args['solver'] == 'moose':
-        gv.to_moose(modelFile)
-        gv.run(args['sim_time'])
+        model = gv.DotModel(modelFile)
+        model.run(args)
     elif args['solver'] == "scipy":
         logger_.error("Solver scipy is still not supported")
     else:

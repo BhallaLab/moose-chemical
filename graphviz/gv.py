@@ -16,6 +16,7 @@ __status__           = "Development"
 import networkx as nx
 import warnings
 import moose
+import moose.utils as mu
 import ast
 import re
 import operator as ops
@@ -42,15 +43,15 @@ class DotModel():
         self.kinetics = {}
         self.functions = {}
         self.poolPath = '/pool'
-        self.reacPath = '/reac'
         self.modelPath = '/model'
         self.funcPath = '/function'
         self.variables = {}
         self.tables = {}
+        self.load()
 
     def init_moose(self, compt):
         """Initialize paths in MOOSE"""
-        for path in [self.poolPath, self.funcPath, self.reacPath, self.modelPath]:
+        for path in [self.poolPath, self.funcPath, self.modelPath]:
             moose.Neutral(path)
 
         if compt is None:
@@ -76,9 +77,10 @@ class DotModel():
             else:
                 logger_.warning("Unknown node type: %s" % n)
 
-            if attr.get('buffered', False):
+            if attr.get('buffered', 'false') == 'true':
                 self.G.node[n]['type'] = 'bufpool'
                 nbufpools += 1
+
         logger_.info("Reactions = {0}, Pools(buffered) = {1}({2})".format(
             nreacs , npools , nbufpools))
 
@@ -100,17 +102,18 @@ class DotModel():
 
         self.init_moose(compt)
         self.create_graph()
-        moose.Neutral('/pool')
+
         compt = moose.CubeMesh('%s/mesh_comp' % self.modelPath)
         compt.volume = float(self.G.graph['graph']['volume'])
-
         # Each node is molecule in graph.
         for node in self.G.nodes():
-            if self.G.node[node]['type'] in ['pool', 'bufpool']:
+            attr = self.G.node[node]
+            print attr['type']
+            if attr['type'] in ['pool', 'bufpool']:
                 self.checkNode(node)
                 self.add_molecule(node, compt)
-            elif self.G.node[node]['type'] == 'reaction':
-                self.add_reaction(node)
+            elif attr['type'].lower() == 'reaction':
+                self.add_reaction(node, compt)
             else:
                 warnings.warn("Unknown/Unsupported type of node in graph")
 
@@ -125,14 +128,15 @@ class DotModel():
         logger_.debug("+ With params: %s" % moleculeDict)
 
         if moleculeType == 'pool':
-            p = self.addPool(poolPath, molecule, moleculeDict)
+            p = self.add_pool(poolPath, molecule, moleculeDict)
         elif "bufpool" == moleculeType:
-            self.addBufPool(poolPath, molecule, moleculeDict)
+            self.add_bufpool(poolPath, molecule, moleculeDict)
         elif "enzyme" == moleculeType:
             self.addEnzyme(poolPath, molecule, moleculeDict)
 
         # Attach a table to it.
-        self.addRecorder(molecule)
+        if moleculeDict.get('plot', 'false').lower() != 'false':
+            self.add_recorder(molecule)
 
     def add_reaction_attr(self, reac, attr):
         """Add attributes to reaction.
@@ -143,16 +147,15 @@ class DotModel():
             kf, kb = float(kf), float(kb)
         except Exception as e:
             warnings.warn("Unsupported values: kf=%s, kb=%s" % (kf, kb))
-
         reac.Kf = kf
         reac.Kb = kb
 
-    def add_reaction(self, node):
+    def add_reaction(self, node, compt):
         """Add a reaction node to MOOSE"""
         attr = self.G.node[node]
-        logger_.info("Adding a reaction: %s" % attr)
+        logger_.info("|- Adding a reaction: %s" % attr)
         reacName = node
-        reacPath = '%s/%s' % (self.reacPath, reacName)
+        reacPath = '%s/%s' % (compt.path, reacName)
         reac = moose.Reac(reacPath)
         self.reactions[node] = reac
         self.add_reaction_attr(reac, attr)
@@ -163,7 +166,7 @@ class DotModel():
             logger_.debug("Adding prd to reac: %s" % tgt)
             moose.connect(reac, 'prd', self.molecules[tgt], 'reac')
 
-    def addPool(self, poolPath, molecule, moleculeDict):
+    def add_pool(self, poolPath, molecule, moleculeDict):
         """Add a moose.Pool or moose.BufPool to moose for a given molecule """
 
         if moleculeDict.get('type', 'variable') == 'constant':
@@ -178,9 +181,8 @@ class DotModel():
         self.molecules[molecule] = p
         return p
 
-    def addBufPool(self, poolPath, molecule, moleculeDict):
+    def add_bufpool(self, poolPath, molecule, moleculeDict):
         """Add a moose.Pool or moose.BufPool to moose for a given molecule """
-
         p = moose.BufPool(poolPath)
         concInit = moleculeDict.get('conc_init', 0.0)
         p.concInit = float(concInit)
@@ -197,8 +199,9 @@ class DotModel():
         self.enzymes[molecule] = enz
         return enz
 
-    def addRecorder(self, molecule):
+    def add_recorder(self, molecule):
         # Add a table
+        logger_.info("Adding a Table on : %s" % molecule)
         moose.Neutral('/tables')
         tablePath = '/tables/{}'.format(molecule)
         tab = moose.Table(tablePath)
@@ -207,22 +210,24 @@ class DotModel():
         self.tables[molecule] = tab
         return elemPath
 
+    def run(self, args):
+        """
+        Run model with given parameters.
+
+        sim_time = simulation time
+        outfile = File to save the results.
+        """
+        moose.reinit()
+        moose.start(float(args['sim_time']))
+        mu.plotRecords(self.tables
+                , outfile = args['outfile']
+                , subplot = True
+                )
+
 def writeSBMLModel(dot_file, outfile = None):
     model = DotModel(dot_file)
     model.createNetwork()
     model.writeSBML(outfile)
-
-def to_moose(dot_file, outfile = None):
-    model = DotModel(dot_file)
-    model.load()
-    tempFile = '%s_out.dot' % dot_file
-    logger_.info("Writing to graphviz file: %s" % tempFile)
-    nx.write_dot(model.G, tempFile)
-
-def run(simtime):
-    moose.reinit()
-    logger_.info("Running for %s sec" % simtime)
-    moose.start(simtime)
 
 def main():
     writeSBMLModel(dot_file = "./smolen_baxter_bryne.dot"
