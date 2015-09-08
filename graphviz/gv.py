@@ -138,17 +138,29 @@ class DotModel():
         if moleculeDict.get('plot', 'false').lower() != 'false':
             self.add_recorder(molecule)
 
+    def add_rate_expr(self, expr, is_forward):
+        """Add a rate expression to reaction.
+        """
+        logger_.info("Adding rate expression: %s" % expr)
+        logger_.info(" ++ is_forward: %s" % is_forward)
+
     def add_reaction_attr(self, reac, attr):
         """Add attributes to reaction.
         """
         kf = attr['kf']
         kb = attr.get('kb', 0.0)
         try:
-            kf, kb = float(kf), float(kb)
+            kf = float(kf)
+            reac.Kf = kf
         except Exception as e:
-            warnings.warn("Unsupported values: kf=%s, kb=%s" % (kf, kb))
-        reac.Kf = kf
-        reac.Kb = kb
+            self.add_rate_expr(reac, kf, True)
+
+        try:
+            kb = float(kb)
+            reac.Kb = kb
+        except Exception as e:
+            self.add_rate_expr(reac, kb, False)
+
 
     def add_reaction(self, node, compt):
         """Add a reaction node to MOOSE"""
