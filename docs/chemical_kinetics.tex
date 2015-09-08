@@ -1,0 +1,89 @@
+\documentclass[a4paper,10pt]{article}
+
+\usepackage{pgf,tikz}
+\usepackage{amsmath,mathtools}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usetikzlibrary{shapes,backgrounds,decorations,decorations.pathmorphing}
+\newcommand{\MOOSE}{ \textsc{Moose} } 
+
+\title{Solving chemical kinetics using differential equations}
+\author{Dilawar Singh}
+\date{September 2015}
+
+% Title Page
+\title{Chemical kinetics in \MOOSE}
+\author{Dilawar Singh}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+Let's explore a simple reaction $ A \xrightleftharpoons[k_2]{k_1} 2B $.
+
+The rate equation for this reaction is below. The variable $a$ and $b$
+represents the concentration of molecule $A$ and $B$.
+
+\begin{equation}
+\label{eq:a}
+- \frac{da}{dt} = \frac{1}{2} \frac{db}{dt} =   k_1 a - k_2 b^2 
+\end{equation}
+
+To produce $x$ amount of $B$, $\frac{x}{2}$ amount of $A$ is consumed. 
+
+\begin{equation}
+\label{eq:b}
+  \frac{1}{2} \frac{d(b_0 + x)}{dt} = \frac{1}{2}\frac{dx}{dt} =  k_1(a_0 - \frac{x}{2}) - k_2(b_0+x)^2
+\end{equation}
+ 
+The same equation w.r.t to $a$.
+
+\begin{equation}
+\label{eq:c}
+- \frac{d(a_0 + y)}{dt} = - \frac{dy}{dt} = k_1(a_0 + y) - k_2(b_0 - 2y)^2 
+\end{equation}
+
+The values of $A(t)$ and $B(t)$ can be obtained by solving above equations. 
+
+\subsection{A solution}
+
+For given values of $k_1 = 2.0$, $k_2 = 1.0$, $a_0 = 1.0$, $b_0 = 0$. A solution
+is generated using wolfram-alpha.
+
+\paragraph{Solution of equation \ref{eq:b}}
+
+\href{http://www.wolframalpha.com/input/?i=x%27%3D4%281-x%2F2%29-2%28x%29^2%2C++x%280%29+%3D+0%2C+t+%3D+10&h=1}{Click
+here}. This gives $b(t = 10) = 1.0 $.
+
+\paragraph{Solution of equation \ref{eq:c}} 
+
+\href{http://www.wolframalpha.com/input/?i=-+y%27%3D2%281%2By%29-1%280-2y%29^2%2C++y%280%29+%3D+0%2C+t+%3D+10&h=1}{Click
+here}. This gives -0.5 at $t = 10$ i.e. $a(t=10) = 1 - 0.5 = 0.5 $.
+
+
+
+\section{Various chemical kinetics}
+
+Table \ref{tab:reacs} lists out reaction scheme and their differential form.
+
+
+\begin{table*}[h]
+    \begin{tabular}{p{0.2\textwidth} p{0.39\textwidth} p{0.39\textwidth}}
+        Reaction Scheme & Differential Form & At $t = 10$ \newline $a_0=1,b_0=0, k_1=2,k_2=1$  \\
+        \hline
+        $A \xrightleftharpoons[k_2]{k_1} B$ & $\frac{dx}{dt} = k_1(a_0 -x) - k_2 x $ &  \\
+        $2A \xrightleftharpoons[k_2]{k_1} B$ & $\frac{dx}{dt} = k_1(a_0 - 2x)^2 - k_2 x$ & $[A] = 0.3917, [B]= 0.30698$ \\
+        $A \xrightleftharpoons[k_2]{k_1} 2B$ & $\frac{1}{2} \frac{dB}{dt} = \frac{1}{2} \frac{dx}{dt} = k_1(a_0 - \frac{x}{2}) - k_2(x)^2$ & $[A] = 0.5, [B]= 1.0$ \\
+    \end{tabular}
+    \caption{Differential equation equivalents of some common chemical kinetics.
+    For all computations we had $a_0 = 1.0$, $b_0 = 0.0$, $k_1 = 2.0$, and
+$k_2=1.0$. In all of these cases, the ratio of $\frac{k_1}{k_2}$ is 2.0 which
+should be same }
+    \label{tab:reacs}
+\end{table*}
+
+\end{document}
+
+
+\end{document}          
