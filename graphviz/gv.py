@@ -23,6 +23,7 @@ import operator as ops
 import sys
 from collections import defaultdict
 import reaction
+import tempfile
 import matplotlib.pyplot as plt
 
 import logging
