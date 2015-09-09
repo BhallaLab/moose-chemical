@@ -5,8 +5,17 @@
 \textclass article
 \begin_preamble
 \usepackage{tikz}
+\usepackage{mathtools,amssymb}
+\usetikzlibrary{arrows,shapes}
+%%\usepackage{mhchem}
 \end_preamble
 \use_default_options true
+\begin_modules
+theorems-std
+figs-within-sections
+endnotes
+customHeadersFooters
+\end_modules
 \maintain_unincluded_children false
 \language english
 \language_package default
@@ -23,7 +32,7 @@
 \font_tt_scale 100
 
 \graphics default
-\default_output_format default
+\default_output_format pdf2
 \output_sync 0
 \bibtex_command default
 \index_command default
@@ -73,8 +82,38 @@
 
 \begin_body
 
-\begin_layout Section
+\begin_layout Title
 Numerical accuracy of chemical kinetics in MOOSE simulator
+\end_layout
+
+\begin_layout Standard
+For these simulations, MOOSE's chemical clocks (index 10 to 15) were set
+ to tick-step of 0.01 second.
+ The default value of 0.1 second was not good enough for at-least 1% accuracy.
+\end_layout
+
+\begin_layout Standard
+The repository for this work is 
+\begin_inset CommandInset href
+LatexCommand href
+name "on github"
+target "https://github.com/dilawar/moose-chemical"
+
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+Following table 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "tab:Numerical-accuracy-of-moose"
+
+\end_inset
+
+ summaries the results.
 \end_layout
 
 \begin_layout Standard
@@ -105,7 +144,7 @@ Reaction Scheme
 \begin_inset Text
 
 \begin_layout Plain Layout
-Differential equation
+Differential form
 \end_layout
 
 \end_inset
@@ -134,29 +173,74 @@ MOOSE solution
 \begin_inset Text
 
 \begin_layout Plain Layout
+2A 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+$
+\backslash
+xleftrightharpoons[k_f]{k_b}$
+\end_layout
+
+\end_inset
+
+ X
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\frac{dx}{dt}=k_{f}(a_{0}-2x)^{2}-k_{b}(x_{0}+x)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.304806
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.306981
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
 A 
 \begin_inset ERT
 status open
 
 \begin_layout Plain Layout
 
-
+$
 \backslash
-leftrightharpoon[k_2]{k_1}
+xleftrightharpoons[k_f]{k_b}$
 \end_layout
 
 \end_inset
 
- B
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
+2X
 \end_layout
 
 \end_inset
@@ -165,7 +249,19 @@ leftrightharpoon[k_2]{k_1}
 \begin_inset Text
 
 \begin_layout Plain Layout
+\begin_inset Formula $\frac{dx}{dt}=k_{f}(a_{0}-\frac{x}{2})-k_{b}(x_{0}+x)^{2}$
+\end_inset
 
+ 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1.0
 \end_layout
 
 \end_inset
@@ -174,7 +270,7 @@ leftrightharpoon[k_2]{k_1}
 \begin_inset Text
 
 \begin_layout Plain Layout
-
+1.001695
 \end_layout
 
 \end_inset
@@ -185,6 +281,31 @@ leftrightharpoon[k_2]{k_1}
 \begin_inset Text
 
 \begin_layout Plain Layout
+2A 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+$
+\backslash
+xleftrightharpoons[k_f]{k_b}$
+\end_layout
+
+\end_inset
+
+2X
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\frac{1}{2}\frac{dx}{dt}=k_{f}(a_{0}-x)^{2}-k_{b}(x_{0}+x)^{2}$
+\end_inset
+
 
 \end_layout
 
@@ -194,16 +315,7 @@ leftrightharpoon[k_2]{k_1}
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
+0.585786
 \end_layout
 
 \end_inset
@@ -212,45 +324,7 @@ leftrightharpoon[k_2]{k_1}
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
+0.58973
 \end_layout
 
 \end_inset
@@ -305,7 +379,39 @@ leftrightharpoon[k_2]{k_1}
 \begin_inset Caption
 
 \begin_layout Plain Layout
-Numerical accuracy of various chemical schemes
+\begin_inset CommandInset label
+LatexCommand label
+name "tab:Numerical-accuracy-of-moose"
+
+\end_inset
+
+Numerical accuracy of MOOSE for various chemical schemes.Values for simulation
+ 
+\begin_inset Formula $k_{f}=2.0$
+\end_inset
+
+, 
+\begin_inset Formula $k_{b}=1.0$
+\end_inset
+
+, 
+\begin_inset Formula $a_{0}=1.0$
+\end_inset
+
+, 
+\begin_inset Formula $x_{0}=0.0$
+\end_inset
+
+.
+ We used 
+\series bold
+wolfram-alpha
+\series default
+ to compute the solution of differential equations at 
+\begin_inset Formula $t=10$
+\end_inset
+
+ seconds.
 \end_layout
 
 \end_inset
