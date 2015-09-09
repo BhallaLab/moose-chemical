@@ -138,11 +138,48 @@ class DotModel():
         if moleculeDict.get('plot', 'false').lower() != 'false':
             self.add_recorder(molecule)
 
-    def add_rate_expr(self, expr, is_forward):
-        """Add a rate expression to reaction.
+    def add_expr_to_function(self, expr, func):
+        """Reformat a given expression 
+
+        Attach a expression to given function.
+
+        Also connect y0, y1 etc to molecules.
         """
-        logger_.info("Adding rate expression: %s" % expr)
-        logger_.info(" ++ is_forward: %s" % is_forward)
+        transDict = {}
+        astExpr = ast.parse(expr)
+        i = 0
+        for node in ast.walk(astExpr):
+            if type(node) == ast.Name:
+                if self.molecules.get(node.id, None) is not None:
+                    key, val = 'y%s' %i, self.molecules[node.id]
+                    expr = expr.replace(node.id, key)
+                    transDict[key] = val
+                    i += 1
+        logger_.debug("Adding expression: %s" % expr)
+        func.expr = expr
+        for k in transDict:
+            logger_.debug("Connecting %s with %s" % (k, transDict[k]))
+            moose.connect(func, 'requestOut', transDict[k], 'getConc')
+
+
+    def add_forward_rate_expr(self, reac, expr):
+        """Add an expression for forward rate constant"""
+        logger_.debug("++ Forward rate expression: %s" % expr)
+        funcPath = '%s/forward_expr_f' % reac.path
+        forwardExprFunc = moose.Function(funcPath)
+        self.add_expr_to_function(expr, forwardExprFunc)
+        logger_.debug("Setting Kf of reac:%s, func:%s" % (reac, forwardExprFunc))
+        moose.connect(forwardExprFunc, 'valueOut', reac, 'setKf') 
+
+    def add_backward_rate_expr(self, reac, expr):
+        """Add an expression for backward rate constant
+        """
+        logger_.debug("++ Backward rate expression: %s" % expr)
+        funcPath = '%s/backward_expr_f' % reac.path
+        backwardFunction = moose.Function(funcPath)
+        self.add_expr_to_function(expr, backwardFunction)
+        logger_.debug("Setting Kb of reac:%s, func:%s" % (reac, backwardFunction))
+        moose.connect(backwardFunction, 'valueOut', reac, 'setKb') 
 
     def add_reaction_attr(self, reac, attr):
         """Add attributes to reaction.
@@ -153,13 +190,13 @@ class DotModel():
             kf = float(kf)
             reac.Kf = kf
         except Exception as e:
-            self.add_rate_expr(reac, kf, True)
+            self.add_forward_rate_expr(reac, kf)
 
         try:
             kb = float(kb)
             reac.Kb = kb
         except Exception as e:
-            self.add_rate_expr(reac, kb, False)
+            self.add_backward_rate_expr(reac, kb)
 
 
     def add_reaction(self, node, compt):

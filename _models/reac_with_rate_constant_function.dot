@@ -8,7 +8,7 @@ digraph simple {
     c [ conc_init = 0.1, plot=true];
 
     // here are the reactions.
-    r1 [ kf = "c**0.5+tan(20)", kb = 1.0 ];
+    r1 [ kf = "c^0.5+tan(20)", kb = 1.0 ];
 
     a -> r1 -> b, b;
 
