@@ -116,6 +116,10 @@ class DotModel():
                 self.add_reaction(node, compt)
             else:
                 warnings.warn("Unknown/Unsupported type of node in graph")
+        # Dump the edited graph into a temp file.
+        outfile = '%s_out.dot' % self.filename
+        logger_.debug("Writing network to : %s" % outfile)
+        nx.write_dot(self.G, outfile)
 
     def add_molecule(self, molecule, compt):
         '''Load node of graph into MOOSE'''
@@ -269,9 +273,10 @@ class DotModel():
         for i in range(10, 16):
             moose.setClock(i, 1e-2)
         moose.reinit()
+        logger_.info("Running MOOSE for %s" % args['sim_time'])
         moose.start(float(args['sim_time']))
         if args['outfile']:
-            mu.plotRecords(self.tables
+            mu.saveRecords(self.tables
                     , outfile = args['outfile']
                     , subplot = True
                     )
