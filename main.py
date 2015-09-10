@@ -14,7 +14,7 @@ __email__            = "dilawars@ncbs.res.in"
 __status__           = "Development"
 
 
-from graphviz import gv
+from yacml import chemviz
 import config
 import logging
 
@@ -22,15 +22,12 @@ logger_ = logging.getLogger('yacml')
 logger_.setLevel(logging.DEBUG)
 
 def main(args):
+    """Main entry function
+    """
     config.args_ = args
-    if args.get('all', False):
-        from test import test_gv
-        test_gv.main()
-        quit()
-
     modelFile = args['model_file']
     if args['solver'] == 'moose':
-        model = gv.DotModel(modelFile)
+        model = chemviz.DotModel(modelFile)
         model.run(args)
         return model
     elif args['solver'] == "scipy":
@@ -43,10 +40,7 @@ if __name__ == '__main__':
     import argparse
     # Argument parser.
     description = '''YACML: Yet Another Chemical Markup Language'''
-    parser = argparse.ArgumentParser(description=description)
-    subparser = parser.add_subparsers()
-
-    argp = subparser.add_parser('run', help = 'run model')
+    argp = argparse.ArgumentParser(description=description)
     argp.add_argument('--model_file', '-f'
             , required = True
             , type = str
@@ -83,14 +77,7 @@ if __name__ == '__main__':
             , help = 'Debug levels: [debug, info, warning, error, critical]'
             )
 
-    argt = subparser.add_parser('test', help = 'Test module')
-    argt.add_argument('--all', '-a'
-            , required = True
-            , action = 'store_true'
-            , help = 'Test this module'
-            )
-
     class Args: pass 
     args = Args()
-    parser.parse_args(namespace=args)
+    argp.parse_args(namespace=args)
     main(vars(args))

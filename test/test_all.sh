@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-models=`find . -type f -name "*.dot"`
+set -e
+models=`find . -type f -name "*.chem"`
 for m in $models; do
-    python ../chemgv.py run -st 20 -f $m --solver moose  --outfile $model_path.dat
+    echo "Executing $m"
+    python ../chemgv.py run -st 20 -f $m --solver moose  --outfile $m.dat
 done
