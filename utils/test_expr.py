@@ -95,7 +95,7 @@ def assert_test(time, node, molecule):
     dt = time / N
     startN, stopN = int(ltl.start/dt), int(ltl.stop/dt)
     data = vec[startN:stopN]
-    if not data:
+    if len(data) == 0:
         mu.warn([ "Ignoring test"
             , "Probably simulation time is not enough" ]
             )
