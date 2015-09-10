@@ -313,8 +313,16 @@ class DotModel():
         for i in range(10, 16):
             moose.setClock(i, 1e-2)
         moose.reinit()
-        logger_.info("Running MOOSE for %s" % args['sim_time'])
-        moose.start(float(args['sim_time']))
+
+
+        if 'sim_time' in self.G.graph['graph']:
+            runtime = float(self.G.graph['graph']['sim_time'])
+        else:
+            runtime = float(args['sim_time'])
+
+        logger_.info("Running MOOSE for %s" % runtime)
+        moose.start(runtime)
+
         time = moose.Clock('/clock').currentTime
         if len(self.nodes_with_tests) > 0:
             [ self.run_test(time, n) for n in self.nodes_with_tests ]

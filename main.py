@@ -60,11 +60,6 @@ if __name__ == '__main__':
             , help = "Which solver to use: moose | scipy"
             )
 
-    argp.add_argument('--plot', '-p'
-            , action = 'store_true'
-            , help = "Plot the results?"
-            )
-
     argp.add_argument('--outfile', '-o'
             , default = None
             , type = str

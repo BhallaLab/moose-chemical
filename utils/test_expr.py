@@ -17,6 +17,7 @@ import re
 import numpy as np
 
 import logging
+import moose.utils as mu
 logger_ = logging.getLogger('gv.test')
 
 
@@ -94,6 +95,12 @@ def assert_test(time, node, molecule):
     dt = time / N
     startN, stopN = int(ltl.start/dt), int(ltl.stop/dt)
     data = vec[startN:stopN]
+    if not data:
+        mu.warn([ "Ignoring test"
+            , "Probably simulation time is not enough" ]
+            )
+        return None
+
     func = np.vectorize(ltl.test_func)
     res = func(data, ltl.value)
     witness = startN + np.flatnonzero(res)
