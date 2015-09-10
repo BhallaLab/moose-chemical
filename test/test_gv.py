@@ -1,11 +1,11 @@
 import unittest
 import sys
-sys.path.append('..')
-import chemgv
+from graphviz import gv
 import moose.utils as mu
 import moose
 
 class Args: pass
+
 args = {
     'solver' : 'moose',
     'plot' : False,
@@ -18,7 +18,8 @@ args = {
 def load_model(model_path, **kwargs):
     global args
     args['model_file'] = model_path
-    model = chemgv.main(args)
+    model = gv.DotModel(model_path)
+    model.run(args)
     mu.saveRecords(model.tables, title=model_path, outfile = '%s.dat' % model_path)
     for k in model.tables:
         print("|- %s[-1] = %s" % (k, model.tables[k].vector[-1]))
@@ -28,7 +29,7 @@ class TestGV( unittest.TestCase ):
 
     def test_simple_a_b_b(self):
         global args
-        tables = load_model('simple_a_b_b.dot')
+        tables = load_model('test/simple_a_b_b.dot')
         a, b = tables['a'], tables['b']
         real, computed= 1.00, b.vector[-1]
         error = abs((real - computed) / real)
@@ -42,7 +43,7 @@ class TestGV( unittest.TestCase ):
         global args
         try: moose.delete('/model')
         except: pass
-        tables = load_model('simple_a_a_b.dot')
+        tables = load_model('test/simple_a_a_b.dot')
         a, b = tables['a'], tables['b']
         real, computed= 0.304806, b.vector[-1]
         error = abs((real - computed) / real)
@@ -56,7 +57,7 @@ class TestGV( unittest.TestCase ):
         global args
         try: moose.delete('/model')
         except: pass
-        tables = load_model('simple_a_a_b_b.dot')
+        tables = load_model('test/simple_a_a_b_b.dot')
         a, b = tables['a'], tables['b']
         real, computed= 0.585786, b.vector[-1]
         error = abs((real - computed) / real)
@@ -65,8 +66,8 @@ class TestGV( unittest.TestCase ):
         print("|| Steay state: %s" % steady_state)
         self.assertAlmostEqual(steady_state, 2.0)
         self.assertTrue(error < 0.01)
- 
- def main():
+
+def main():
     runner = unittest.TextTestRunner()
     suite = unittest.TestSuite()
     tests = ['test_simple_a_b_b', 'test_simple_a_a_b']
@@ -76,4 +77,3 @@ class TestGV( unittest.TestCase ):
 
 if __name__ == '__main__':
     main()
-

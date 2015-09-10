@@ -1,5 +1,5 @@
 digraph simple {
-	graph [file="_tests/simple_a_b_b.dot",
+	graph [file="test/simple_a_b_b.dot",
 		volume=1.0
 	];
 	a	 [conc_init=1,

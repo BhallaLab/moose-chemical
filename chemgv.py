@@ -23,9 +23,10 @@ logger_.setLevel(logging.DEBUG)
 
 def main(args):
     config.args_ = args
-    if args.get('test', False):
+    if args.get('all', False):
         from test import test_gv
         test_gv.main()
+        quit()
 
     modelFile = args['model_file']
     if args['solver'] == 'moose':
@@ -42,20 +43,24 @@ if __name__ == '__main__':
     import argparse
     # Argument parser.
     description = '''YACML: Yet Another Chemical Markup Language'''
-    argp = argparse.ArgumentParser(description=description)
-    argp.add_argument('--sim_time', '-st'
-            , metavar='variable'
-            , required = True
-            , type = float
-            , help = 'A generic option'
-            )
+    parser = argparse.ArgumentParser(description=description)
+    subparser = parser.add_subparsers()
+
+    argp = subparser.add_parser('run', help = 'run model')
     argp.add_argument('--model_file', '-f'
             , required = True
             , type = str
             , help = 'Model file'
             )
+    
+    argp.add_argument('--sim_time', '-st'
+            , metavar='variable'
+            , default = 10.0
+            , type = float
+            , help = 'A generic option'
+            )
+
     argp.add_argument('--solver', '-s'
-            , required = True
             , default = 'moose'
             , type = str
             , help = "Which solver to use: moose | scipy"
@@ -67,26 +72,25 @@ if __name__ == '__main__':
             )
 
     argp.add_argument('--outfile', '-o'
-            , required = False
             , default = None
             , type = str
             , help = "Name of the plot file"
             )
 
     argp.add_argument('--log', '-l'
-            , required = False
             , default = 'warning'
             , type = str
             , help = 'Debug levels: [debug, info, warning, error, critical]'
             )
 
-    argp.add_argument('--test', '-t'
-            , required = False
+    argt = subparser.add_parser('test', help = 'Test module')
+    argt.add_argument('--all', '-a'
+            , required = True
             , action = 'store_true'
             , help = 'Test this module'
             )
 
     class Args: pass 
     args = Args()
-    argp.parse_args(namespace=args)
+    parser.parse_args(namespace=args)
     main(vars(args))
