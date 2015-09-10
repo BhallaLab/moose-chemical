@@ -73,8 +73,10 @@ class DotModel():
         npools, nbufpools, nreacs = 0, 0, 0
         for n in self.G.nodes():
             attr = self.G.node[n]
-            if "test" not in attr.keys():
-                self.G.node[n]['test'] = False
+
+            self.G.node[n]['do_test'] = False
+            for k in attr.keys():
+                if "test" in k: self.G.node[n]['do_test'] = True
 
             if "conc_init" in attr.keys():
                 self.G.node[n]['type'] = 'pool'
@@ -165,7 +167,7 @@ class DotModel():
         if moleculeDict.get('plot', 'false').lower() != 'false':
             self.add_recorder(molecule)
 
-        if moleculeDict.get('test', False):
+        if moleculeDict.get('do_test', False):
             self.add_test(molecule)
 
     def add_expr_to_function(self, expr, func):
@@ -280,28 +282,32 @@ class DotModel():
 
     def add_test(self, molecule):
         """To enable a  test, we need to attach a recorder """
-        testExpr = self.G.node[molecule]['test']
+        ltls = []
+        for k in self.G.node[molecule].keys():
+            if "test_" in k:
+                ltl = te.LTL(k, self.G.node[molecule][k])
+                ltls.append(ltl)
+                self.add_recorder(molecule, ltl.field)
         self.nodes_with_tests.append(molecule)
-        ltl = te.LTL(testExpr)
-        self.G.node[molecule]['ltl'] = ltl
-        self.add_recorder(molecule, ltl.field)
+        self.G.node[molecule]['ltls'] = ltls
 
     def add_recorder(self, molecule, field='conc'):
-        # Add a table
+        # Add a table to molecule. 
+        # TODO: Each molecule can have more than one table? 
         logger_.info("Adding a Table on : %s" % molecule)
         moose.Neutral('/tables')
-        tablePath = '/tables/{}'.format(molecule)
-        tab = moose.Table(tablePath)
+        tablePath = '/tables/%s_%s' % (molecule, field)
+        tab = moose.Table2(tablePath)
         elemPath = self.molecules[molecule]
         tab.connect('requestOut', elemPath, 'get' + field[0].upper() + field[1:])
         self.tables[molecule] = tab
-        self.G.node[molecule]['recorder'] = tab
+        self.G.node[molecule]['%s_table' % field] = tab
         return elemPath
 
     def run_test(self, time, node):
         n = self.G.node[node]
         logger_.debug("Test for : %s" % n)
-        te.assert_test(time, n, node)
+        te.execute_tests(time, n, node)
 
     def run(self, args):
         """

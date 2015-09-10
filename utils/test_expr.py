@@ -23,12 +23,13 @@ logger_ = logging.getLogger('gv.test')
 
 class LTL():
 
-    def __init__(self, expr):
+    def __init__(self, name, expr):
         """
         assertion; 
         op : operator
         interval: in the given interval
         """
+        self.name = name
         self.expr = expr
         self.assertion, self.op, self.interval = expr.split(';')
         self.start = None
@@ -86,11 +87,16 @@ class LTL():
         self.lambda_expr()
 
 
-def assert_test(time, node, molecule):
-    """Assert a test on node """
+def execute_tests(time, node, molecule):
+    """ Run given ltl test on a node"""
     logger_.info("Running test on molecule: %s" % molecule)
-    vec = node['recorder'].vector
-    ltl = node['ltl']
+    ltls = node['ltls']
+    [ assert_ltl(ltl, node, molecule, time) for ltl in ltls ]
+
+def assert_ltl(ltl, node, molecule, time):
+    logger_.debug("Running a LTL (%s) on given node" % ltl.name)
+    field = ltl.field 
+    vec = node['%s_table' % field].vector
     N = len(vec)
     dt = time / N
     startN, stopN = int(ltl.start/dt), int(ltl.stop/dt)
@@ -108,7 +114,7 @@ def assert_test(time, node, molecule):
     value_witness = np.take(vec, witness)
     if len(witness) == 0: print("\t Passed")
     else:
-        outfile = "%s.witness" % molecule
+        outfile = "%s_%s.witness" % (molecule, ltl.name)
         witness_mat = np.vstack([time_witness, value_witness]).T
         print("\tFailed. Witness is printed below (time, value)")
         print(witness_mat)
