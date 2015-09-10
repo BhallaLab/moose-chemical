@@ -31,6 +31,11 @@ import logging
 logger_ = logging.getLogger('gv.graphviz')
 logger_.setLevel(logging.DEBUG)
 
+def chem_to_graphviz(text):
+    """Given text of chemviz file, return a graphviz file
+    """
+    text = text.replace('compartment', 'digraph')
+    return text
 
 class DotModel():
     '''
@@ -91,12 +96,22 @@ class DotModel():
         logger_.info("Reactions = {0}, Pools(buffered) = {1}({2})".format(
             nreacs , npools , nbufpools))
 
+
     def create_graph(self):
         """Create chemical network """
-        self.G = nx.read_dot(self.filename)
+
+        with tempfile.NamedTemporaryFile() as dotFile:
+            with open(self.filename, "r") as f:
+                modelText = f.read()
+            logger_.debug("Generating graphviz : %s" % dotFile.name)
+            dotFile.write(chem_to_graphviz(modelText))
+            dotFile.flush()
+            self.G = nx.read_dot(dotFile.name)
+
         self.G = nx.MultiDiGraph(self.G)
         assert self.G.number_of_nodes() > 0, "Zero molecules"
         self.attach_types()
+
 
     def checkNode(self, n):
         return True
@@ -108,6 +123,7 @@ class DotModel():
         '''Load given model into MOOSE'''
 
         self.init_moose(compt)
+
         self.create_graph()
 
         compt = moose.CubeMesh('%s/mesh_comp' % self.modelPath)
@@ -124,7 +140,7 @@ class DotModel():
             else:
                 warnings.warn("Unknown/Unsupported type of node in graph")
         # Dump the edited graph into a temp file.
-        outfile = '%s_out.dot' % self.filename
+        outfile = '%s.dot' % self.filename
         logger_.debug("Writing network to : %s" % outfile)
         nx.write_dot(self.G, outfile)
 
