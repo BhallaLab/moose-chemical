@@ -23,6 +23,10 @@ logger_.setLevel(logging.DEBUG)
 
 def main(args):
     config.args_ = args
+    if args.get('test', False):
+        from test import test_gv
+        test_gv.main()
+
     modelFile = args['model_file']
     if args['solver'] == 'moose':
         model = gv.DotModel(modelFile)
@@ -74,6 +78,12 @@ if __name__ == '__main__':
             , default = 'warning'
             , type = str
             , help = 'Debug levels: [debug, info, warning, error, critical]'
+            )
+
+    argp.add_argument('--test', '-t'
+            , required = False
+            , action = 'store_true'
+            , help = 'Test this module'
             )
 
     class Args: pass 

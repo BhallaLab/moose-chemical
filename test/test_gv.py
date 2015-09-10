@@ -66,11 +66,14 @@ class TestGV( unittest.TestCase ):
         self.assertAlmostEqual(steady_state, 2.0)
         self.assertTrue(error < 0.01)
  
-
-if __name__ == '__main__':
+ def main():
     runner = unittest.TextTestRunner()
     suite = unittest.TestSuite()
     tests = ['test_simple_a_b_b', 'test_simple_a_a_b']
     tests += [ 'test_simple_a_a_b_b' ]
     for t in tests: suite.addTest(TestGV(t))
     runner.run(suite)
+
+if __name__ == '__main__':
+    main()
+
