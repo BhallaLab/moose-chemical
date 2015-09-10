@@ -11,5 +11,5 @@ install:
   - sudo apt-get install moose-python 
 
 script:
-  - ./test/test_all.sh
+  - ( cd ./test && ./test_all.sh )
 
