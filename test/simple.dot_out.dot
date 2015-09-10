@@ -1,0 +1,18 @@
+digraph simple {
+	graph [file="_models/simple.dot",
+		volume=1.0
+	];
+	a	 [conc_init=1,
+		plot=true,
+		type=bufpool];
+	r1	 [kb=1.0,
+		kf=2.0,
+		shape=rect,
+		type=bufpool];
+	a -> r1 [key=0];
+b [conc_init=0,
+	plot=true,
+	type=bufpool];
+r1 -> b [key=0];
+r1 -> b [key=1];
+}
