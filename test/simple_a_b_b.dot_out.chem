@@ -1,17 +1,22 @@
 digraph simple {
-	graph [file="test/simple_a_b_b.dot",
+	graph [file="./simple_a_b_b.dot",
 		volume=1.0
 	];
 	a	 [conc_init=1,
 		plot=true,
+		recorder="<moose.Table: id=447, dataIndex=0, path=/tables[0]/a[0]>",
+		test=False,
 		type=pool];
 	r1	 [kb=1.0,
 		kf=2.0,
 		shape=rect,
+		test=False,
 		type=reaction];
 	a -> r1 [key=0];
 b [conc_init=0,
 	plot=true,
+	recorder="<moose.Table: id=449, dataIndex=0, path=/tables[0]/b[0]>",
+	test=False,
 	type=pool];
 r1 -> b [key=0];
 r1 -> b [key=1];
