@@ -1,6 +1,7 @@
 import unittest
 import sys
-import gv
+sys.path.append('..')
+import chemgv
 import moose.utils as mu
 import moose
 
@@ -17,7 +18,7 @@ args = {
 def load_model(model_path, **kwargs):
     global args
     args['model_file'] = model_path
-    model = gv.main(args)
+    model = chemgv.main(args)
     mu.saveRecords(model.tables, title=model_path, outfile = '%s.dat' % model_path)
     for k in model.tables:
         print("|- %s[-1] = %s" % (k, model.tables[k].vector[-1]))
@@ -27,7 +28,7 @@ class TestGV( unittest.TestCase ):
 
     def test_simple_a_b_b(self):
         global args
-        tables = load_model('_models/simple_a_b_b.dot')
+        tables = load_model('simple_a_b_b.dot')
         a, b = tables['a'], tables['b']
         real, computed= 1.00, b.vector[-1]
         error = abs((real - computed) / real)
@@ -41,7 +42,7 @@ class TestGV( unittest.TestCase ):
         global args
         try: moose.delete('/model')
         except: pass
-        tables = load_model('_models/simple_a_a_b.dot')
+        tables = load_model('simple_a_a_b.dot')
         a, b = tables['a'], tables['b']
         real, computed= 0.304806, b.vector[-1]
         error = abs((real - computed) / real)
@@ -55,7 +56,7 @@ class TestGV( unittest.TestCase ):
         global args
         try: moose.delete('/model')
         except: pass
-        tables = load_model('_models/simple_a_a_b_b.dot')
+        tables = load_model('simple_a_a_b_b.dot')
         a, b = tables['a'], tables['b']
         real, computed= 0.585786, b.vector[-1]
         error = abs((real - computed) / real)
