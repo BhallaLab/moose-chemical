@@ -11,5 +11,5 @@ install:
   - sudo apt-get install moose-python 
 
 script:
-  - python chemgv.py test --all
+  - ./test/test_all.sh
 
