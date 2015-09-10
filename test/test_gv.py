@@ -25,8 +25,16 @@ def load_model(model_path, **kwargs):
         print("|- %s[-1] = %s" % (k, model.tables[k].vector[-1]))
     return model.tables
 
+def test_with_epxression(func):
+    print("Testing model with equivalent expression as well")
+    def inner(*args, **kwargs):
+        return func(*args, **kwargs)
+
+    return inner
+
 class TestGV( unittest.TestCase ):
 
+    @test_with_epxression
     def test_simple_a_b_b(self):
         global args
         tables = load_model('test/simple_a_b_b.dot')

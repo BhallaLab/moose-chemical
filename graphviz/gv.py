@@ -19,6 +19,7 @@ import moose
 import moose.utils as mu
 import ast
 import re
+from utils import test_expr as te
 import operator as ops
 import sys
 from collections import defaultdict
@@ -48,6 +49,8 @@ class DotModel():
         self.funcPath = '/function'
         self.variables = {}
         self.tables = {}
+        self.nodes_with_tests = []
+        # Finally load the model
         self.load()
 
     def init_moose(self, compt):
@@ -65,6 +68,9 @@ class DotModel():
         npools, nbufpools, nreacs = 0, 0, 0
         for n in self.G.nodes():
             attr = self.G.node[n]
+            if "test" not in attr.keys():
+                self.G.node[n]['test'] = False
+
             if "conc_init" in attr.keys():
                 self.G.node[n]['type'] = 'pool'
                 npools += 1
@@ -142,6 +148,9 @@ class DotModel():
         # Attach a table to it.
         if moleculeDict.get('plot', 'false').lower() != 'false':
             self.add_recorder(molecule)
+
+        if moleculeDict.get('test', False):
+            self.add_test(molecule)
 
     def add_expr_to_function(self, expr, func):
         """Reformat a given expression 
@@ -253,16 +262,30 @@ class DotModel():
         self.enzymes[molecule] = enz
         return enz
 
-    def add_recorder(self, molecule):
+    def add_test(self, molecule):
+        """To enable a  test, we need to attach a recorder """
+        testExpr = self.G.node[molecule]['test']
+        self.nodes_with_tests.append(molecule)
+        ltl = te.LTL(testExpr)
+        self.G.node[molecule]['ltl'] = ltl
+        self.add_recorder(molecule, ltl.field)
+
+    def add_recorder(self, molecule, field='conc'):
         # Add a table
         logger_.info("Adding a Table on : %s" % molecule)
         moose.Neutral('/tables')
         tablePath = '/tables/{}'.format(molecule)
         tab = moose.Table(tablePath)
         elemPath = self.molecules[molecule]
-        tab.connect('requestOut', elemPath, 'getConc')
+        tab.connect('requestOut', elemPath, 'get' + field[0].upper() + field[1:])
         self.tables[molecule] = tab
+        self.G.node[molecule]['recorder'] = tab
         return elemPath
+
+    def run_test(self, time, node):
+        n = self.G.node[node]
+        logger_.debug("Test for : %s" % n)
+        te.assert_test(time, n, node)
 
     def run(self, args):
         """
@@ -276,6 +299,10 @@ class DotModel():
         moose.reinit()
         logger_.info("Running MOOSE for %s" % args['sim_time'])
         moose.start(float(args['sim_time']))
+        time = moose.Clock('/clock').currentTime
+        if len(self.nodes_with_tests) > 0:
+            [ self.run_test(time, n) for n in self.nodes_with_tests ]
+
         if args['outfile']:
             mu.saveRecords(self.tables
                     , outfile = args['outfile']
