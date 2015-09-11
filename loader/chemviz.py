@@ -28,11 +28,14 @@ import tempfile
 import matplotlib.pyplot as plt
 
 import logging
-logger_ = logging.getLogger('yacml.chemviz')
+logger_ = logging.getLogger('loader.chemviz')
 logger_.setLevel(logging.DEBUG)
 
-def chem_to_graphviz(text):
-    """Given text of chemviz file, return a graphviz file
+def yacml_to_dot(text):
+    """yacml_to_dot
+    Convert YACML test to a dot.
+
+    :param text: Text of YACML model.
     """
     text = text.replace('compartment', 'digraph')
     return text
@@ -63,8 +66,10 @@ class DotModel():
         for path in [self.poolPath, self.funcPath, self.modelPath]:
             moose.Neutral(path)
 
+        comptName = str(self.G)
         if compt is None:
-            self.compartment = moose.CubeMesh('/compartment')
+            logger_.info("Creating compartment: %s" % comptName)
+            self.compartment = moose.CubeMesh('/%s' % comptName)
         else: self.compartment = compt
         self.poolPath = self.compartment.path
 
@@ -107,9 +112,14 @@ class DotModel():
             with open(self.filename, "r") as f:
                 modelText = f.read()
             logger_.debug("Generating graphviz : %s" % dotFile.name)
-            dotFile.write(chem_to_graphviz(modelText))
+            dotFile.write(yacml_to_dot(modelText))
             dotFile.flush()
-            self.G = nx.read_dot(dotFile.name)
+            try:
+                self.G = nx.read_dot(dotFile.name)
+            except Exception as e:
+                mu.error(["Failed to load YACML file." 
+                    , "Error was %s" % e
+                    ])
 
         self.G = nx.MultiDiGraph(self.G)
         assert self.G.number_of_nodes() > 0, "Zero molecules"
@@ -125,16 +135,14 @@ class DotModel():
     def load(self, compt = None):
         '''Load given model into MOOSE'''
 
-        self.init_moose(compt)
-
         self.create_graph()
+        self.init_moose(compt)
 
         compt = moose.CubeMesh('%s/mesh_comp' % self.modelPath)
         compt.volume = float(self.G.graph['graph']['volume'])
         # Each node is molecule in graph.
         for node in self.G.nodes():
             attr = self.G.node[node]
-            print attr['type']
             if attr['type'] in ['pool', 'bufpool']:
                 self.checkNode(node)
                 self.add_molecule(node, compt)
