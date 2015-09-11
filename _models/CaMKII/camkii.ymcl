@@ -2,12 +2,20 @@ compartment synapse {
 
     volume = "1e-15";
 
-    ca [ conc_init = 0.0, plot = true ];
+    ca [ conc_init = "1e-4", plot = true ];
 
-    CamKII [n_init = 20, plot = true ];
+    // CamKII molecules with 0 subunits of 6 subunits of ring phosporylated.
+    CamKII_down [n_init = 20, plot = true ];
 
-    CamKII_p [ n_init = 0, plot = true  ];
+    // CamKII molecules with 1 subunits of 6 subunits of ring phosporylated
+    CamKII_p1 [n_init = 20, plot = true ];
 
-    sim_time = 10.0;
+    // All CamKII subunits are phosporylated
+    CamKII_up [ n_init = 0, plot = true  ];
+
+    r_p0_p1 [ kf =  "7.61e-5", kb = 0.0, solver=stoich ];
+    CamKII_down -> r_p0_p1 -> CamKII_p1;
+
+    sim_time = 100.0;
 }
 
