@@ -18,7 +18,7 @@ import numpy as np
 
 import logging
 import moose.utils as mu
-logger_ = logging.getLogger('gv.test')
+logger_ = logging.getLogger('util.testexpr')
 
 
 class LTL():
@@ -90,8 +90,7 @@ class LTL():
 def execute_tests(time, node, molecule):
     """ Run given ltl test on a node"""
     logger_.info("Running test on molecule: %s" % molecule)
-    ltls = node['ltls']
-    [ assert_ltl(ltl, node, molecule, time) for ltl in ltls ]
+    [ assert_ltl(ltl, node, molecule, time) for ltl in node['ltls'] ]
 
 def assert_ltl(ltl, node, molecule, time):
     logger_.debug("Running a LTL (%s) on given node" % ltl.name)

@@ -28,7 +28,7 @@ import tempfile
 import matplotlib.pyplot as plt
 
 import logging
-logger_ = logging.getLogger('gv.graphviz')
+logger_ = logging.getLogger('yacml.chemviz')
 logger_.setLevel(logging.DEBUG)
 
 def chem_to_graphviz(text):
@@ -76,12 +76,13 @@ class DotModel():
 
             self.G.node[n]['do_test'] = False
             for k in attr.keys():
-                if "test" in k: self.G.node[n]['do_test'] = True
+                if "test" in k: 
+                    self.G.node[n]['do_test'] = True
 
-            if "conc_init" in attr.keys():
+            if "conc_init" in attr.keys() or 'conc' in attr.keys():
                 self.G.node[n]['type'] = 'pool'
                 npools += 1
-            elif 'n_init' in attr.keys():
+            elif 'n_init' in attr.keys() or 'n' in attr.keys():
                 self.G.node[n]['type'] = 'pool'
                 npools += 1
             elif 'expr' in attr.keys() or 'kf' in attr.keys():
@@ -102,7 +103,7 @@ class DotModel():
     def create_graph(self):
         """Create chemical network """
 
-        with tempfile.NamedTemporaryFile() as dotFile:
+        with tempfile.NamedTemporaryFile( delete = False , suffix = '.dot') as dotFile:
             with open(self.filename, "r") as f:
                 modelText = f.read()
             logger_.debug("Generating graphviz : %s" % dotFile.name)
@@ -167,10 +168,10 @@ class DotModel():
         if moleculeDict.get('plot', 'false').lower() != 'false':
             self.add_recorder(molecule)
 
-        if moleculeDict.get('do_test', False):
+        if moleculeDict['do_test']:
             self.add_test(molecule)
 
-    def add_expr_to_function(self, expr, func):
+    def add_expr_to_function(self, expr, func, field = 'conc'):
         """Reformat a given expression 
 
         Attach a expression to given function.
@@ -191,7 +192,8 @@ class DotModel():
         func.expr = expr
         for k in transDict:
             logger_.debug("Connecting %s with %s" % (k, transDict[k]))
-            moose.connect(func, 'requestOut', transDict[k], 'getConc')
+            f = 'get' + field[0].upper() + field[1:]
+            moose.connect(func, 'requestOut', transDict[k], f)
 
 
     def add_forward_rate_expr(self, reac, expr):
@@ -259,8 +261,26 @@ class DotModel():
         p.concInit = float(concInit)
         if moleculeDict.get('n_init', None):
             p.nInit = float(moleculeDict['n_init'])
+
+        # If there is an expression for 'conc' create a function and apply a
+        # input.
+        if moleculeDict.get('conc', ''):
+            self.add_expression_to_pool(p, moleculeDict['conc'], 'conc')
+        elif moleculeDict.get('n', ''):
+            self.add_expression_to_pool(p, moleculeDict['conc'], 'n')
+        else: pass
+
         self.molecules[molecule] = p
         return p
+
+    def add_expression_to_pool(self, pool, expression, field = 'conc'):
+        """generate conc of pool by a time dependent expression"""
+        logger_.debug("Adding %s to pool %s" % (expression, pool))
+        fieldFunc = moose.Function("%s/func_%s" % (pool.path, field))
+
+        quit()
+
+        
 
     def add_bufpool(self, poolPath, molecule, moleculeDict):
         """Add a moose.Pool or moose.BufPool to moose for a given molecule """
@@ -288,8 +308,8 @@ class DotModel():
                 ltl = te.LTL(k, self.G.node[molecule][k])
                 ltls.append(ltl)
                 self.add_recorder(molecule, ltl.field)
-        self.nodes_with_tests.append(molecule)
-        self.G.node[molecule]['ltls'] = ltls
+                self.nodes_with_tests.append(molecule)
+                self.G.node[molecule]['ltls'] = ltls
 
     def add_recorder(self, molecule, field='conc'):
         # Add a table to molecule. 
@@ -306,7 +326,6 @@ class DotModel():
 
     def run_test(self, time, node):
         n = self.G.node[node]
-        logger_.debug("Test for : %s" % n)
         te.execute_tests(time, n, node)
 
     def run(self, args):

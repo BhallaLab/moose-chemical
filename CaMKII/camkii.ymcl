@@ -1,10 +1,12 @@
 compartment synapse {
 
-    volume = 1e-15;
+    volume = "1e-15";
 
-    CamKII [n_init = 20 ];
+    ca [ conc = "1e-4*(1+sin(t)+1/3*sin(3t)+1/5*sin(5t)" ];
 
-    CamKII_p [ n_init = 0 ];
+    CamKII [n_init = 20, plot = true ];
+
+    CamKII_p [ n_init = 0, plot = true  ];
 
     sim_time = 10.0;
 }
