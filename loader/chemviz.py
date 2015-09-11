@@ -184,7 +184,10 @@ class DotModel():
 
         # Attach a table to it.
         if moleculeDict.get('plot', 'false').lower() != 'false':
-            self.add_recorder(molecule)
+            f = 'conc'
+            if 'n_init' in moleculeDict or 'n' in moleculeDict: 
+                f = 'n'
+            self.add_recorder(molecule, f)
 
         if moleculeDict['do_test']:
             self.add_test(molecule)
@@ -355,13 +358,13 @@ class DotModel():
     def add_recorder(self, molecule, field='conc'):
         # Add a table to molecule. 
         # TODO: Each molecule can have more than one table? 
-        logger_.info("Adding a Table on : %s" % molecule)
+        logger_.info("Adding a Table on : %s.%s" % (molecule, field))
         moose.Neutral('/tables')
         tablePath = '/tables/%s_%s' % (molecule, field)
         tab = moose.Table2(tablePath)
         elemPath = self.molecules[molecule]
         tab.connect('requestOut', elemPath, 'get' + field[0].upper() + field[1:])
-        self.tables[molecule] = tab
+        self.tables["%s.%s" % (molecule, field)] = tab
         self.G.node[molecule]['%s_table' % field] = tab
         return elemPath
 
