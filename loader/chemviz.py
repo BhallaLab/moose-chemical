@@ -166,7 +166,12 @@ class DotModel():
         nx.write_dot(self.G, outfile)
 
     def add_molecule(self, molecule, compt):
-        '''Load node of graph into MOOSE'''
+        """add_molecule
+        add molecule to compartment.
+
+        :param molecule: name of the molecule to add.
+        :param compt: Under which comparment to add.
+        """
 
         moleculeDict = self.G.node[molecule]
         poolPath = '{}/{}'.format(compt.path, molecule)
@@ -209,6 +214,7 @@ class DotModel():
                     expr = expr.replace(node.id, key)
                     transDict[key] = val
                     i += 1
+
         logger_.debug("Adding expression: %s" % expr)
         func.expr = expr
         for k in transDict:
@@ -281,16 +287,20 @@ class DotModel():
         :param solver: Type of solver, string.
         """
         if solver == 'stoich':
-            mu.info("Using sotich solver on %s" % reac.name)
+            mu.info("Creating a sotich solver on %s" % reac.name)
             logger_.debug("reac: %s" % reac)
             logger_.debug("Compt: %s" % self.__cur_compt__)
-            gsolve = moose.Gsolve('%s/gsolve' % self.__cwd__)
-            stoich = moose.Stoich('%s/stoich' % self.__cwd__)
-            stoich.compartment = self.__cur_compt__ 
-            stoich.ksolve = gsolve
-            stoich.path = '%s/##' % self.__cwd__
+            if not moose.exists('%s/gsolve' % self.__cwd__):
+                gsolve = moose.Gsolve('%s/gsolve' % self.__cwd__)
+                stoich = moose.Stoich('%s/stoich' % self.__cwd__)
+                stoich.compartment = self.__cur_compt__ 
+                stoich.ksolve = gsolve
+                if stoich.path != "%s/##" % self.__cwd__:
+                    stoich.path = '%s/##' % self.__cwd__
+            else:
+                mu.warn("Gsolve already exists. Not creating a new one.")
         else:
-            mu.warn([ "Solver type %s is unknown/unsuppored" % solver ])
+            mu.warn("Solver type %s is unknown/unsuppored" % solver)
 
 
     def add_pool(self, poolPath, molecule, moleculeDict):
@@ -301,10 +311,14 @@ class DotModel():
         else:
             p = moose.Pool(poolPath)
 
-        concInit = moleculeDict.get('conc_init', 0.0)
-        p.concInit = float(concInit)
-        if moleculeDict.get('n_init', None):
+        if 'conc_init' in moleculeDict:
+            concInit = float(moleculeDict['conc_init'])
+            logger_.debug("Setting %s.conc_init to %s" % (molecule, concInit))
+            p.concInit = concInit
+        elif 'n_init' in  moleculeDict:
             p.nInit = float(moleculeDict['n_init'])
+        else:
+            mu.fatal("Neither conc_init nor n_init specified for %s" % molecule)
 
         # If there is an expression for 'conc' create a function and apply a
         # input.
@@ -379,8 +393,12 @@ class DotModel():
         sim_time = simulation time
         outfile = File to save the results.
         """
+
+        # get dt from chemviz file
+        dt = float(self.G.graph['graph'].get('dt', 0.01))
+        mu.info("Using dt=%s for all chemical process" % dt)
         for i in range(10, 16):
-            moose.setClock(i, 1e-2)
+            moose.setClock(i, dt)
         moose.reinit()
 
 

@@ -32,7 +32,7 @@ def add_extra(model):
     moose.reinit()
 
 def main():
-    modelfile = "CaMKII/camkii.ymcl"
+    modelfile = "CaMKII/camkii.yacml"
     model = yacml.loadYACML(modelfile)
     add_extra(model)
     model.run()
