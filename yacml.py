@@ -1,6 +1,4 @@
-"""main.py: 
-
-    Load a graphviz chemical model into MOOSE.
+"""yacml.py: 
 
 """
     
@@ -17,9 +15,19 @@ __status__           = "Development"
 from yacml import chemviz
 import config
 import logging
+import moose.utils
 
 logger_ = logging.getLogger('yacml')
 logger_.setLevel(logging.DEBUG)
+
+def loadYACML(modelFile, **kwargs):
+    """loadYACML Load YACML model into MOOSE.
+
+    :param modelFile: Path of model.
+    :param **kwargs:
+    """
+    model = chemviz.DotModel(modelFile)
+    return model
 
 def main(args):
     """Main entry function

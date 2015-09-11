@@ -22,6 +22,13 @@ import logging
 
 logger_ = logging.getLogger('yacml')
 
+
+def loadYACML(modelfile):
+    import moose.utils as mu
+    mu.info("Loading YACML model %s" % modelfile)
+    model = parser_yml.pare(modelfile)
+
+
 def main(args):
     config.args_ = args
     modelFile = args['model_file']

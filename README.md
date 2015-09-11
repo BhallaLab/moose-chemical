@@ -3,3 +3,5 @@
 YACML
 
 Yet Another Chemical Markup Language
+
+A wrapper on top of `dot` language.
