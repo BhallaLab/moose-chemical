@@ -52,26 +52,36 @@ class DotModel():
         self.reactions = {}
         self.kinetics = {}
         self.functions = {}
-        self.poolPath = '/pool'
+        self.poolPath = None
         self.modelPath = '/model'
-        self.funcPath = '/function'
+        self.funcPath = None
         self.variables = {}
         self.tables = {}
         self.nodes_with_tests = []
+        self.compartments = {}
+        self.__cwd__ = ""
+        self.__cur_compt__ = None
         # Finally load the model
         self.load()
 
     def init_moose(self, compt):
         """Initialize paths in MOOSE"""
-        for path in [self.poolPath, self.funcPath, self.modelPath]:
+        for path in [self.modelPath]:
             moose.Neutral(path)
 
         comptName = str(self.G)
+
+        curCompt = None
         if compt is None:
             logger_.info("Creating compartment: %s" % comptName)
-            self.compartment = moose.CubeMesh('/%s' % comptName)
-        else: self.compartment = compt
-        self.poolPath = self.compartment.path
+            curCompt =  moose.CubeMesh('%s/%s' % (self.modelPath, comptName))
+        else: 
+            curCompt = compt
+
+        self.compartments[comptName] = curCompt
+        self.poolPath = curCompt.path
+        self.__cwd__ = curCompt.path
+        self.__cur_compt__ = curCompt
 
     def attach_types(self):
         """This function attach types to node of graphs"""
@@ -138,7 +148,7 @@ class DotModel():
         self.create_graph()
         self.init_moose(compt)
 
-        compt = moose.CubeMesh('%s/mesh_comp' % self.modelPath)
+        compt = self.__cur_compt__ 
         compt.volume = float(self.G.graph['graph']['volume'])
         # Each node is molecule in graph.
         for node in self.G.nodes():
@@ -257,6 +267,29 @@ class DotModel():
             logger_.debug("Adding prd to reac: %s" % tgt)
             moose.connect(reac, 'prd', self.molecules[tgt], 'reac')
 
+        # Check for solvers.
+        if attr.get('solver', None) is not None:
+            self.setup_solver(reac, attr['solver'])
+
+    def setup_solver(self, reac, solver):
+        """setup_solver. Use a solver for given reaction.
+
+        :param reac: moose.Reaction element.
+        :param solver: Type of solver, string.
+        """
+        if solver == 'stoich':
+            mu.info("Using sotich solver on %s" % reac.name)
+            logger_.debug("reac: %s" % reac)
+            logger_.debug("Compt: %s" % self.__cur_compt__)
+            gsolve = moose.Gsolve('%s/gsolve' % self.__cwd__)
+            stoich = moose.Stoich('%s/stoich' % self.__cwd__)
+            stoich.compartment = self.__cur_compt__ 
+            stoich.ksolve = gsolve
+            stoich.path = '%s/##' % self.__cwd__
+        else:
+            mu.warn([ "Solver type %s is unknown/unsuppored" % solver ])
+
+
     def add_pool(self, poolPath, molecule, moleculeDict):
         """Add a moose.Pool or moose.BufPool to moose for a given molecule """
 
@@ -336,7 +369,7 @@ class DotModel():
         n = self.G.node[node]
         te.execute_tests(time, n, node)
 
-    def run(self, args):
+    def run(self, run_time=None, **kwargs):
         """
         Run model with given parameters.
 
@@ -351,7 +384,7 @@ class DotModel():
         if 'sim_time' in self.G.graph['graph']:
             runtime = float(self.G.graph['graph']['sim_time'])
         else:
-            runtime = float(args['sim_time'])
+            runtime = float(run_time)
 
         logger_.info("Running MOOSE for %s" % runtime)
         moose.start(runtime)
@@ -360,11 +393,11 @@ class DotModel():
         if len(self.nodes_with_tests) > 0:
             [ self.run_test(time, n) for n in self.nodes_with_tests ]
 
-        if args['outfile']:
-            mu.saveRecords(self.tables
-                    , outfile = args['outfile']
-                    , subplot = True
-                    )
+        outfile = "%s.dat" % self.filename
+        if kwargs.get('outfile', None) is not None:
+            outfile = kwargs['outfile']
+
+        mu.saveRecords(self.tables, outfile =  outfile )
 
 def writeSBMLModel(dot_file, outfile = None):
     model = DotModel(dot_file)
