@@ -1,0 +1,11 @@
+compartment synapse {
+
+    volume = 1e-15;
+
+    CamKII [n_init = 20 ];
+
+    CamKII_p [ n_init = 0 ];
+
+    sim_time = 10.0;
+}
+
