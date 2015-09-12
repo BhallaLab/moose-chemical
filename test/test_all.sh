@@ -3,5 +3,5 @@ set -e
 models=`find . -type f -name "*.chem"`
 for m in $models; do
     echo "Executing $m"
-    python ../main.py -st 20 -f $m --solver moose  --outfile $m.dat
+    python ../yacml.py -st 20 -f $m --solver moose  --outfile $m.dat
 done
