@@ -287,16 +287,15 @@ class DotModel():
         :param solver: Type of solver, string.
         """
         if solver == 'stoich':
-            mu.info("Creating a sotich solver on %s" % reac.name)
-            logger_.debug("reac: %s" % reac)
-            logger_.debug("Compt: %s" % self.__cur_compt__)
+            mu.info("Creating a Gsolve solver on %s" % reac.name)
+            logger_.debug("|- reac: %s" % reac)
+            logger_.debug("|- Compt: %s" % self.__cur_compt__)
             if not moose.exists('%s/gsolve' % self.__cwd__):
                 gsolve = moose.Gsolve('%s/gsolve' % self.__cwd__)
                 stoich = moose.Stoich('%s/stoich' % self.__cwd__)
                 stoich.compartment = self.__cur_compt__ 
                 stoich.ksolve = gsolve
-                if stoich.path != "%s/##" % self.__cwd__:
-                    stoich.path = '%s/##' % self.__cwd__
+                stoich.path = '%s/##' % self.__cwd__
             else:
                 mu.warn("Gsolve already exists. Not creating a new one.")
         else:
@@ -333,12 +332,9 @@ class DotModel():
 
     def add_expression_to_pool(self, pool, expression, field = 'conc'):
         """generate conc of pool by a time dependent expression"""
-        logger_.debug("Adding %s to pool %s" % (expression, pool))
+        logger_.debug("TODO: Adding %s to pool %s" % (expression, pool))
         fieldFunc = moose.Function("%s/func_%s" % (pool.path, field))
 
-        quit()
-
-        
 
     def add_bufpool(self, poolPath, molecule, moleculeDict):
         """Add a moose.Pool or moose.BufPool to moose for a given molecule """
