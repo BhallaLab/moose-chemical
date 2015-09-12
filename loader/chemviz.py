@@ -294,16 +294,10 @@ class DotModel():
 
         """
         solver = self.G.graph['graph'].get('solver', 'ksolve')
-        if solver.lower() == "ksolve":
-            isStochastic = False
-        elif solver.lower() == "gsolve":
-            isStochastic = True
-        else:
-            pass
-        self.setup_solver(solver.lower(), self.__cur_compt__, isStochastic)
+        self.setup_solver(solver.lower(), self.__cur_compt__)
 
 
-    def setup_solver(self, solver, compt, isStochastic):
+    def setup_solver(self, solver, compt, **kwargs):
         """setup_solver. Use a solver for given reaction. Solvers must be set in
         the end.
 
