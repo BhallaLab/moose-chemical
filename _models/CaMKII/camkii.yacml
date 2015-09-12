@@ -1,6 +1,6 @@
 compartment synapse {
 
-    volume = "1e-20";
+    volume = "1e-18";
 
     ca [ conc_init = "1e-4", plot = true ];
 
@@ -13,16 +13,15 @@ compartment synapse {
     // All CamKII subunits are phosporylated
     CamKII_up [ n_init = 0, plot = true  ];
 
-    r_p0_p1 [ kf =  "1e-2", kb = 0.0, solver=stoich ];
-    //r_p0_p1 [ kf =  "1e-2", kb = 0.0]
+    r_p0_p1 [ kf =  "1e-2", kb = 0.0 ];
     CamKII_down -> r_p0_p1 -> CamKII_p1;
 
-    r_p1_up [ kf = "7.61e-5", kb = 0.0, solver=stoich ];
-    //r_p1_up [ kf = "4.36e-3", kb = 0.0]
+    r_p1_up [ kf = "7.61e-5", kb = 0.0];
     CamKII_p1 -> r_p1_up -> CamKII_up;
 
     // All simulation related setting are here.
+    solver = ksolve
     dt = 0.001
-    sim_time = 300.0;
+    sim_time = 300.0
 }
 

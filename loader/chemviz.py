@@ -40,6 +40,11 @@ def yacml_to_dot(text):
     text = text.replace('compartment', 'digraph')
     return text
 
+def to_bool(arg):
+    if arg.lower() in [ "0", "f", "false", "no", "n" ]:
+        return False
+    return True
+
 class DotModel():
     '''
     Parse graphviz file and populate a chemical model in MOOSE.
@@ -160,6 +165,10 @@ class DotModel():
                 self.add_reaction(node, compt)
             else:
                 warnings.warn("Unknown/Unsupported type of node in graph")
+
+        # NOTICE: Solvers are always set in the end.
+        self.setup_solvers()
+
         # Dump the edited graph into a temp file.
         outfile = '%s.dot' % self.filename
         logger_.debug("Writing network to : %s" % outfile)
@@ -268,6 +277,7 @@ class DotModel():
         reacPath = '%s/%s' % (compt.path, reacName)
         reac = moose.Reac(reacPath)
         self.reactions[node] = reac
+        self.G.node[node]['reaction'] = reac
         self.add_reaction_attr(reac, attr)
         for sub, tgt in self.G.in_edges(node):
             logger_.debug("Adding sub to reac: %s" % sub)
@@ -276,31 +286,44 @@ class DotModel():
             logger_.debug("Adding prd to reac: %s" % tgt)
             moose.connect(reac, 'prd', self.molecules[tgt], 'reac')
 
-        # Check for solvers.
-        if attr.get('solver', None) is not None:
-            self.setup_solver(reac, attr['solver'])
+    def setup_solvers(self):
+        """setup_solvers Add solvers after model is loaded. 
 
-    def setup_solver(self, reac, solver):
-        """setup_solver. Use a solver for given reaction.
+        One compartment can only have one solver, so its a property of
+        graph/subgraph.
+
+        """
+        solver = self.G.graph['graph'].get('solver', 'ksolve')
+        if solver.lower() == "ksolve":
+            isStochastic = False
+        elif solver.lower() == "gsolve":
+            isStochastic = True
+        else:
+            pass
+        self.setup_solver(solver.lower(), self.__cur_compt__, isStochastic)
+
+
+    def setup_solver(self, solver, compt, isStochastic):
+        """setup_solver. Use a solver for given reaction. Solvers must be set in
+        the end.
 
         :param reac: moose.Reaction element.
         :param solver: Type of solver, string.
         """
-        if solver == 'stoich':
-            mu.info("Creating a Gsolve solver on %s" % reac.name)
-            logger_.debug("|- reac: %s" % reac)
-            logger_.debug("|- Compt: %s" % self.__cur_compt__)
-            if not moose.exists('%s/gsolve' % self.__cwd__):
-                gsolve = moose.Gsolve('%s/gsolve' % self.__cwd__)
-                stoich = moose.Stoich('%s/stoich' % self.__cwd__)
-                stoich.compartment = self.__cur_compt__ 
-                stoich.ksolve = gsolve
-                stoich.path = '%s/##' % self.__cwd__
-            else:
-                mu.warn("Gsolve already exists. Not creating a new one.")
+        mu.info("Adding a solver %s to compartment %s" % (solver, compt.path))
+        s = None
+        if solver == "ksolve":
+            s = moose.Ksolve('%s/ksolve' % compt.path)
+        elif solver == 'gsolve':
+            s = moose.Gsolve('%s/gsolve' % compt.path)
         else:
-            mu.warn("Solver type %s is unknown/unsuppored" % solver)
-
+            mu.warn("Unknown solver: %s. Using ksolve." % solver)
+            s = moose.Ksolve('%s/ksolve' % compt.path)
+        stoich = moose.Stoich('%s/stoich' % compt.path)
+        # NOTE: must be set before compartment or path.
+        stoich.ksolve = s
+        stoich.compartment = compt
+        stoich.path = '%s/##' % compt.path
 
     def add_pool(self, poolPath, molecule, moleculeDict):
         """Add a moose.Pool or moose.BufPool to moose for a given molecule """
