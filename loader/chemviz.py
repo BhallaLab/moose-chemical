@@ -155,13 +155,17 @@ class DotModel():
 
         compt = self.__cur_compt__ 
         compt.volume = float(self.G.graph['graph']['volume'])
-        # Each node is molecule in graph.
+
+        # make sure the pools/buffpools are added to MOOSE before adding
+        # reactions.
         for node in self.G.nodes():
             attr = self.G.node[node]
             if attr['type'] in ['pool', 'bufpool']:
-                self.checkNode(node)
                 self.add_molecule(node, compt)
-            elif attr['type'].lower() == 'reaction':
+
+        for node in self.G.nodes():
+            attr = self.G.node[node]
+            if attr['type'].lower() == 'reaction':
                 self.add_reaction(node, compt)
             else:
                 warnings.warn("Unknown/Unsupported type of node in graph")
@@ -273,11 +277,10 @@ class DotModel():
         except Exception as e:
             self.add_backward_rate_expr(reac, kb)
 
-
     def add_reaction(self, node, compt):
         """Add a reaction node to MOOSE"""
         attr = self.G.node[node]
-        logger_.info("|- Adding a reaction: %s" % attr)
+        logger_.info("|- Adding a reaction: %s, %s" % (node, attr))
         reacName = node
         reacPath = '%s/%s' % (compt.path, reacName)
         reac = moose.Reac(reacPath)
