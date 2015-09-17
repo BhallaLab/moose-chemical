@@ -59,7 +59,7 @@ class DotModel():
         self.functions = {}
         self.poolPath = None
         self.modelPath = '/model'
-        self.funcPath = None
+        self.funcPath = '/model/functions'
         self.variables = {}
         self.tables = {}
         self.nodes_with_tests = []
@@ -71,7 +71,7 @@ class DotModel():
 
     def init_moose(self, compt):
         """Initialize paths in MOOSE"""
-        for path in [self.modelPath]:
+        for path in [self.modelPath, self.funcPath]:
             moose.Neutral(path)
 
         comptName = str(self.G)
@@ -307,7 +307,7 @@ class DotModel():
         the end.
 
         :param reac: moose.Reaction element.
-        :param solver: Type of solver, string.
+        :param solver: Type of solver i.e. ksolve/gsolve, string.
         """
         mu.info("Adding a solver %s to compartment %s" % (solver, compt.path))
         s = None
@@ -316,10 +316,12 @@ class DotModel():
         elif solver == 'gsolve':
             s = moose.Gsolve('%s/gsolve' % compt.path)
         else:
-            mu.warn("Unknown solver: %s. Using ksolve." % solver)
-            s = moose.Ksolve('%s/ksolve' % compt.path)
+            msg = "Unknown solver: %s. Using ksolve." % solver
+            mu.warn(msg)
+
         stoich = moose.Stoich('%s/stoich' % compt.path)
         # NOTE: must be set before compartment or path.
+        assert s
         stoich.ksolve = s
         stoich.compartment = compt
         stoich.path = '%s/##' % compt.path
@@ -355,7 +357,14 @@ class DotModel():
     def add_pool_expression(self, pool, expression, field = 'conc'):
         """generate conc of pool by a time dependent expression"""
         logger_.info("Adding %s to pool %s" % (expression, pool))
-        func = moose.Function("%s/func_%s" % (pool.path, field))
+        
+        ## fixme: issue #32 on moose-core. Function must not be created under
+        ## stoich.path.
+        #func = moose.Function("%s/func_%s" % (pool.path, field))
+
+        ## This is safe.
+        func = moose.Function("%s/func_%s" % (self.funcPath, field))
+
         self.add_expr_to_function(expression, func, field)
         func.mode = 1
         moose.connect(func, 'valueOut', pool, 'set'+field[0].upper()+field[1:])
