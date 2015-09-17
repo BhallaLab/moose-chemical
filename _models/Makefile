@@ -5,4 +5,4 @@ simulate : ./camkii.py ./CaMKII/camkii.yacml
 	python camkii.py 
 
 plot : simulate 
-	~/Scripts/plot_csv.py -i CaMKII/camkii.yacml.dat -y 1-4 -s
+	~/Scripts/plot_csv.py -i CaMKII/camkii.yacml.dat -y 1-5 -s
