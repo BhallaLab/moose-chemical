@@ -2,7 +2,7 @@ compartment synapse {
 
     volume = "1e-18";
 
-    ca [ conc_init = "1e-4", plot = true ];
+    ca [ conc_init = "1e-4", conc="1e-4*sin(t)", plot = true ];
 
     // CamKII molecules with 0 subunits of 6 subunits of ring phosporylated.
     CamKII_down [n_init = 20, plot = true ];

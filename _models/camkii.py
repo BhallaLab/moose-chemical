@@ -34,7 +34,7 @@ def add_extra(model):
 def main():
     modelfile = "CaMKII/camkii.yacml"
     model = yacml.loadYACML(modelfile)
-    add_extra(model)
+    #add_extra(model)
     model.run()
 
 if __name__ == '__main__':

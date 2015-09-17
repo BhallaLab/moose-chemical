@@ -94,10 +94,10 @@ class DotModel():
         for n in self.G.nodes():
             attr = self.G.node[n]
 
-            self.G.node[n]['do_test'] = False
+            self.G.node[n]['do_test'] = "false"
             for k in attr.keys():
                 if "test" in k: 
-                    self.G.node[n]['do_test'] = True
+                    self.G.node[n]['do_test'] = "true"
 
             if "conc_init" in attr.keys() or 'conc' in attr.keys():
                 self.G.node[n]['type'] = 'pool'
@@ -197,13 +197,13 @@ class DotModel():
             self.addEnzyme(poolPath, molecule, moleculeDict)
 
         # Attach a table to it.
-        if moleculeDict.get('plot', 'false').lower() != 'false':
+        if to_bool(moleculeDict.get('plot', 'false')):
             f = 'conc'
             if 'n_init' in moleculeDict or 'n' in moleculeDict: 
                 f = 'n'
             self.add_recorder(molecule, f)
 
-        if moleculeDict['do_test']:
+        if to_bool(moleculeDict.get('do_test', "false")):
             self.add_test(molecule)
 
     def add_expr_to_function(self, expr, func, field = 'conc'):
@@ -216,6 +216,8 @@ class DotModel():
         transDict = {}
         astExpr = ast.parse(expr)
         i = 0
+
+        # Replace all variables with MOOSE elements.
         for node in ast.walk(astExpr):
             if type(node) == ast.Name:
                 if self.molecules.get(node.id, None) is not None:
@@ -226,6 +228,9 @@ class DotModel():
 
         logger_.debug("Adding expression: %s" % expr)
         func.expr = expr
+
+        # After replacing variables with appropriate yi's, connect
+        # them to appropriate MOOSE elements.
         for k in transDict:
             logger_.debug("Connecting %s with %s" % (k, transDict[k]))
             f = 'get' + field[0].upper() + field[1:]
@@ -339,19 +344,21 @@ class DotModel():
         # If there is an expression for 'conc' create a function and apply a
         # input.
         if moleculeDict.get('conc', ''):
-            self.add_expression_to_pool(p, moleculeDict['conc'], 'conc')
+            self.add_pool_expression(p, moleculeDict['conc'], 'conc')
         elif moleculeDict.get('n', ''):
-            self.add_expression_to_pool(p, moleculeDict['conc'], 'n')
+            self.add_pool_expression(p, moleculeDict['conc'], 'n')
         else: pass
 
         self.molecules[molecule] = p
         return p
 
-    def add_expression_to_pool(self, pool, expression, field = 'conc'):
+    def add_pool_expression(self, pool, expression, field = 'conc'):
         """generate conc of pool by a time dependent expression"""
-        logger_.debug("TODO: Adding %s to pool %s" % (expression, pool))
-        fieldFunc = moose.Function("%s/func_%s" % (pool.path, field))
-
+        logger_.info("Adding %s to pool %s" % (expression, pool))
+        func = moose.Function("%s/func_%s" % (pool.path, field))
+        self.add_expr_to_function(expression, func, field)
+        func.mode = 1
+        moose.connect(func, 'valueOut', pool, 'set'+field[0].upper()+field[1:])
 
     def add_bufpool(self, poolPath, molecule, moleculeDict):
         """Add a moose.Pool or moose.BufPool to moose for a given molecule """
