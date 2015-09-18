@@ -270,10 +270,16 @@ class DotModel():
         enz = self.molecules[attr['enzyme']]
         # Use this enzyme to create an enz-complex
         enzPath = '{0}/enz'.format(enz.path)
+
         mooseEnz = moose.Enz(enzPath)
+
+        mooseEnz.Km = float(attr['km'])
+        mooseEnz.kcat = float(attr['kcat'])
+
+        moose.connect(mooseEnz, 'enz', enz, 'reac')
+
         mooseEnzCplx = moose.Pool('%s/cplx' % enzPath)
         moose.connect(mooseEnz, 'cplx', mooseEnzCplx, 'reac')
-        moose.connect(mooseEnz, 'enz', enz, 'reac')
 
         # Attach substrate and product to enzymatic reaction.
         for sub, tgt in self.G.in_edges(node):
@@ -282,7 +288,6 @@ class DotModel():
         for sub, tgt in self.G.out_edges(node):
             logger_.debug("Adding prd to enz-reac: %s" % tgt)
             moose.connect(mooseEnz, 'prd', self.molecules[tgt], 'reac')
-
 
     def setup_solvers(self):
         """setup_solvers Add solvers after model is loaded. 
