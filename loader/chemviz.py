@@ -160,8 +160,6 @@ class DotModel():
                 self.molecules[node] = self.add_bufpool(node, compt)
             elif isinstance(attr['type'], tc.Pool):
                 self.molecules[node] = self.add_pool(node, compt)
-            elif isinstance(attr['type'], tc.Enzyme):
-                self.enzymes[node] = self.add_enzyme(node, compt)
             else:
                 pass
 
@@ -269,6 +267,22 @@ class DotModel():
         """Add an enzymatic reaction """
         attr = self.G.node[node]
         pu.info(["Adding an enz-reaction: %s" % node, "With attribs %s:" % attr])
+        enz = self.molecules[attr['enzyme']]
+        # Use this enzyme to create an enz-complex
+        enzPath = '{0}/enz'.format(enz.path)
+        mooseEnz = moose.Enz(enzPath)
+        mooseEnzCplx = moose.Pool('%s/cplx' % enzPath)
+        moose.connect(mooseEnz, 'cplx', mooseEnzCplx, 'reac')
+        moose.connect(mooseEnz, 'enz', enz, 'reac')
+
+        # Attach substrate and product to enzymatic reaction.
+        for sub, tgt in self.G.in_edges(node):
+            logger_.debug("Adding sub to enz-reac: %s" % sub)
+            moose.connect(mooseEnz, 'sub', self.molecules[sub], 'reac')
+        for sub, tgt in self.G.out_edges(node):
+            logger_.debug("Adding prd to enz-reac: %s" % tgt)
+            moose.connect(mooseEnz, 'prd', self.molecules[tgt], 'reac')
+
 
     def setup_solvers(self):
         """setup_solvers Add solvers after model is loaded. 
@@ -372,20 +386,20 @@ class DotModel():
         func.mode = 1
         moose.connect(func, 'valueOut', moose_pool, 'set'+field[0].upper()+field[1:])
 
-    def add_enzyme(self, molecule, compt):
-        """Add an enzyme """
-        enzPath = '{}/{}'.format(compt.path, molecule)
-        enz =  moose.Enz(enzPath)
-        e = self.G.node[molecule]['type']
-        if type(e.km) == float:
-            enz.Km = e.km
-        else:
-            pu.dump("TODO", "Support string expression on Km")
-        if type(e.kcat) == float:
-            enz.kcat = e.kcat
-        else:
-            pu.dump("TODO", "Support string expression on kcat")
-        return enz
+    ##def add_enzyme(self, molecule, compt):
+    ##    """Add an enzyme """
+    ##    enzPath = '{}/{}'.format(compt.path, molecule)
+    ##    enz =  moose.Enz(enzPath)
+    ##    e = self.G.node[molecule]['type']
+    ##    if type(e.km) == float:
+    ##        enz.Km = e.km
+    ##    else:
+    ##        pu.dump("TODO", "Support string expression on Km")
+    ##    if type(e.kcat) == float:
+    ##        enz.kcat = e.kcat
+    ##    else:
+    ##        pu.dump("TODO", "Support string expression on kcat")
+    ##    return enz
 
     def add_test(self, molecule):
         """To enable a  test, we need to attach a recorder """
