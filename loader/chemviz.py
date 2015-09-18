@@ -375,7 +375,7 @@ class DotModel():
     def add_enzyme(self, molecule, compt):
         """Add an enzyme """
         enzPath = '{}/{}'.format(compt.path, molecule)
-        enz =  moose.Enz(poolPath)
+        enz =  moose.Enz(enzPath)
         e = self.G.node[molecule]['type']
         if type(e.km) == float:
             enz.Km = e.km
