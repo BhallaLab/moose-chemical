@@ -235,16 +235,13 @@ class DotModel():
         """Add attributes to reaction.
         """
         kf = attr['kf']
-        kb = attr.get('kb', 0.0)
+        kb = attr['kb']
         try:
-            kf = float(kf)
-            reac.Kf = kf
+            reac.Kf = float(kf)
         except Exception as e:
             self.add_forward_rate_expr(reac, kf)
-
         try:
-            kb = float(kb)
-            reac.Kb = kb
+            reac.Kb = float(kb)
         except Exception as e:
             self.add_backward_rate_expr(reac, kb)
 
