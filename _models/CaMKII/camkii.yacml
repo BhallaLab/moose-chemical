@@ -17,6 +17,7 @@ compartment PSD {
 
     // Phosphatase enzype
     pp1 [ n_init = 20, constant = true, plot = true ];
+    pp1Enz [ km = "0.4e-3", kcat = 10 ];
 
     // pp1 and CamKII_p1 complex
     pp1_sp [ n_init = 0, plot = true ];
@@ -32,15 +33,20 @@ compartment PSD {
      */
 
     // This reaction eq 3 in paper
+    /*
     // TODO: These reactions should be enzymatic reactions.
-    //r_pp1_sp [ kf = 25000, kb = 0 ]; 
-    //r_pp1sp_s [ kf = 10, kb = 0 ];
+    r_pp1_sp [ kf = 25000, kb = 0 ]; 
+    r_pp1sp_s [ kf = 10, kb = 0 ];
 
-    //pp1, CamKII_p1 -> r_pp1_sp -> pp1_sp;
-    //pp1_sp -> r_pp1sp_s -> pp1, CamKII_down;
-    //
+    pp1, CamKII_p1 -> r_pp1_sp -> pp1_sp;
+    pp1_sp -> r_pp1sp_s -> pp1, CamKII_down;
+    */
+
     // Enzymatic version.
-    dephoshp [ enzyme = pp1, km = "0.4e-3" ];
+
+    dephoshp [ enzyme = pp1Enz, km = "0.4e-3" ];
+    pp1_sp -> dephoshp ->  CamKII_down;
+
 
     /*
      * Simulation related

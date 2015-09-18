@@ -157,18 +157,20 @@ class DotModel():
         for node in self.G.nodes():
             attr = self.G.node[node]
             if isinstance(attr['type'], tc.BufPool):
-                self.add_bufpool(node, compt)
+                self.molecules[node] = self.add_bufpool(node, compt)
             elif isinstance(attr['type'], tc.Pool):
-                self.add_pool(node, compt)
+                self.molecules[node] = self.add_pool(node, compt)
+            elif isinstance(attr['type'], tc.Enzyme):
+                self.enzymes[node] = self.add_enzyme(node, compt)
             else:
                 pass
 
         for node in self.G.nodes():
             attr = self.G.node[node]
             if isinstance(attr['type'], tc.EnzymaticReaction):
-                pu.dump("TODO", "Implement EnzymaticReaction")
+                self.reactions[node] = self.add_enzymatic_reaction(node, compt)
             elif isinstance(attr['type'], tc.Reaction):
-                self.add_reaction(node, compt)
+                self.reactions[node] = self.add_reaction(node, compt)
             else:
                 pass
 
@@ -179,6 +181,7 @@ class DotModel():
         outfile = '%s.dot' % self.filename
         logger_.debug("Writing network to : %s" % outfile)
         nx.write_dot(self.G, outfile)
+
 
     def add_expr_to_function(self, expr, func, field = 'conc'):
         """Reformat a given expression 
@@ -251,10 +254,7 @@ class DotModel():
         """Add a reaction node to MOOSE"""
         attr = self.G.node[node]
         pu.info(["Adding a reaction: %s" % node, "With attribs %s:" % attr])
-        reacName = node
-        reacPath = '%s/%s' % (compt.path, reacName)
-        reac = moose.Reac(reacPath)
-        self.reactions[node] = reac
+        reac = moose.Reac('%s/%s' % (compt.path, node))
         self.G.node[node]['reaction'] = reac
         self.add_reaction_attr(reac, attr)
         for sub, tgt in self.G.in_edges(node):
@@ -263,6 +263,12 @@ class DotModel():
         for sub, tgt in self.G.out_edges(node):
             logger_.debug("Adding prd to reac: %s" % tgt)
             moose.connect(reac, 'prd', self.molecules[tgt], 'reac')
+        return reac.path
+
+    def add_enzymatic_reaction(self, node, compt):
+        """Add an enzymatic reaction """
+        attr = self.G.node[node]
+        pu.info(["Adding an enz-reaction: %s" % node, "With attribs %s:" % attr])
 
     def setup_solvers(self):
         """setup_solvers Add solvers after model is loaded. 
@@ -308,7 +314,8 @@ class DotModel():
         poolPath = '{}/{}'.format(compt.path, molecule)
         p = moose.Pool(poolPath)
         pool = self.G.node[molecule]['type']
-        self.add_parameters_to_pool(p, pool)
+        isPlot = to_bool(moleculeDict.get('plot', 'false'))
+        self.add_parameters_to_pool(p, pool, plot=isPlot)
         return p
 
     def add_bufpool(self, molecule, compt):
@@ -319,11 +326,14 @@ class DotModel():
         logger_.debug("|- %s" % moleculeDict)
         p = moose.BufPool(poolPath)
         bufpool = self.G.node[molecule]['type']
-        self.add_parameters_to_pool(p, bufpool) 
+        isPlot = to_bool(moleculeDict.get('plot', 'false'))
+        self.add_parameters_to_pool(p, bufpool, isPlot) 
         return p
 
-    def add_parameters_to_pool(self, moose_pool, pool):
+    def add_parameters_to_pool(self, moose_pool, pool, plot = False):
         if pool.concOrN == 'conc':
+            if plot:
+                self.add_recorder(moose_pool, 'conc')
             if type(pool.conc) == float:
                 logger_.debug("Setting %s.concInit to %s" % (moose_pool, pool.conc))
                 moose_pool.concInit = pool.conc
@@ -334,6 +344,8 @@ class DotModel():
                     , pool.conc
                     ])
         elif pool.concOrN == 'n':
+            if plot:
+                self.add_recorder(moose_pool, 'n')
             if type(pool.n) == int:
                 logger_.debug("Setting %s.nInit to %s" % (moose_pool, pool.n))
                 moose_pool.nInit = pool.n
@@ -360,12 +372,19 @@ class DotModel():
         func.mode = 1
         moose.connect(func, 'valueOut', moose_pool, 'set'+field[0].upper()+field[1:])
 
-    def addEnzyme(self, poolPath, molecule, moleculeDict):
+    def add_enzyme(self, molecule, compt):
         """Add an enzyme """
+        enzPath = '{}/{}'.format(compt.path, molecule)
         enz =  moose.Enz(poolPath)
-        enz.concInit = float(moleculeDict.get('conc_init', 0.0))
-        self.molecules[molecule] = enz
-        self.enzymes[molecule] = enz
+        e = self.G.node[molecule]['type']
+        if type(e.km) == float:
+            enz.Km = e.km
+        else:
+            pu.dump("TODO", "Support string expression on Km")
+        if type(e.kcat) == float:
+            enz.kcat = e.kcat
+        else:
+            pu.dump("TODO", "Support string expression on kcat")
         return enz
 
     def add_test(self, molecule):
@@ -375,22 +394,22 @@ class DotModel():
             if "test_" in k:
                 ltl = te.LTL(k, self.G.node[molecule][k])
                 ltls.append(ltl)
-                self.add_recorder(molecule, ltl.field)
+                self.add_recorder(self.molecules[molecule], ltl.field)
                 self.nodes_with_tests.append(molecule)
                 self.G.node[molecule]['ltls'] = ltls
 
-    def add_recorder(self, molecule, field='conc'):
+    def add_recorder(self, moose_elem, field='conc'):
         # Add a table to molecule. 
         # TODO: Each molecule can have more than one table? 
+        molecule = moose_elem.name
         logger_.info("Adding a Table on : %s.%s" % (molecule, field))
         moose.Neutral('/tables')
         tablePath = '/tables/%s_%s' % (molecule, field)
         tab = moose.Table2(tablePath)
-        elemPath = self.molecules[molecule]
-        tab.connect('requestOut', elemPath, 'get' + field[0].upper() + field[1:])
+        tab.connect('requestOut', moose_elem, 'get' + field[0].upper() + field[1:])
         self.tables["%s.%s" % (molecule, field)] = tab
         self.G.node[molecule]['%s_table' % field] = tab
-        return elemPath
+        return moose_elem.path
 
     def run_test(self, time, node):
         n = self.G.node[node]
