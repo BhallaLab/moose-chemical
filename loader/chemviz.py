@@ -1,6 +1,6 @@
-"""util.py: 
+"""chemviz.py
 
-    Generates a SBML model.
+    load YACML.
 """
     
 __author__           = "Dilawar Singh"
@@ -16,6 +16,7 @@ __status__           = "Development"
 import networkx as nx
 import warnings
 import moose
+import moose.print_utils as pu
 import moose.utils as mu
 import ast
 import re
@@ -26,7 +27,9 @@ from collections import defaultdict
 import reaction
 import tempfile
 import matplotlib.pyplot as plt
+import utils.typeclass as tc
 
+import utils.typeclass as tc
 import logging
 logger_ = logging.getLogger('loader.chemviz')
 logger_.setLevel(logging.DEBUG)
@@ -54,6 +57,10 @@ class DotModel():
         self.filename = modelFile
         self.G = nx.MultiDiGraph()
         self.molecules = {}
+        self.npools = 0
+        self.nbufpool = 0
+        self.nreac = 0
+        self.enzymes = {}
         self.reactions = {}
         self.kinetics = {}
         self.functions = {}
@@ -88,38 +95,27 @@ class DotModel():
         self.__cwd__ = curCompt.path
         self.__cur_compt__ = curCompt
 
-    def attach_types(self):
-        """This function attach types to node of graphs"""
-        npools, nbufpools, nreacs = 0, 0, 0
+    def initialize_graph(self):
+        """Initialize a given graph 
+        """
         for n in self.G.nodes():
             attr = self.G.node[n]
-
             self.G.node[n]['do_test'] = "false"
             for k in attr.keys():
                 if "test" in k: 
                     self.G.node[n]['do_test'] = "true"
-
-            if "conc_init" in attr.keys() or 'conc' in attr.keys():
-                self.G.node[n]['type'] = 'pool'
-                npools += 1
-            elif 'n_init' in attr.keys() or 'n' in attr.keys():
-                self.G.node[n]['type'] = 'pool'
-                npools += 1
-            elif 'expr' in attr.keys() or 'kf' in attr.keys():
-                self.G.node[n]['type'] = 'reaction'
-                self.G.node[n]['shape'] = 'rect'
-                nreacs += 1
-            else:
-                logger_.warning("Unknown node type: %s" % n)
-
-            if attr.get('buffered', 'false') == 'true':
-                self.G.node[n]['type'] = 'bufpool'
-                nbufpools += 1
+            self.attach_type(n)
 
         logger_.info("Reactions = {0}, Pools(buffered) = {1}({2})".format(
-            nreacs , npools , nbufpools))
+            self.nreac , self.npools , self.nbufpool))
 
-
+    def attach_type(self, n):
+        """This function attach types to node 'n' of graph"""
+        attr = self.G.node[n]
+        ntype = tc.determine_type(n, self.G)
+        logger_.info("Type of node %s is %s" % (n, ntype))
+        self.G.node[n]['type'] = ntype
+        
     def create_graph(self):
         """Create chemical network """
 
@@ -132,13 +128,13 @@ class DotModel():
             try:
                 self.G = nx.read_dot(dotFile.name)
             except Exception as e:
-                mu.error(["Failed to load YACML file." 
+                pu.error(["Failed to load YACML file." 
                     , "Error was %s" % e
                     ])
 
         self.G = nx.MultiDiGraph(self.G)
         assert self.G.number_of_nodes() > 0, "Zero molecules"
-        self.attach_types()
+        self.initialize_graph()
 
 
     def checkNode(self, n):
@@ -160,15 +156,21 @@ class DotModel():
         # reactions.
         for node in self.G.nodes():
             attr = self.G.node[node]
-            if attr['type'] in ['pool', 'bufpool']:
-                self.add_molecule(node, compt)
+            if isinstance(attr['type'], tc.BufPool):
+                self.add_bufpool(node, compt)
+            elif isinstance(attr['type'], tc.Pool):
+                self.add_pool(node, compt)
+            else:
+                pass
 
         for node in self.G.nodes():
             attr = self.G.node[node]
-            if attr['type'].lower() == 'reaction':
+            if isinstance(attr['type'], tc.EnzymaticReaction):
+                pu.dump("TODO", "Implement EnzymaticReaction")
+            elif isinstance(attr['type'], tc.Reaction):
                 self.add_reaction(node, compt)
             else:
-                warnings.warn("Unknown/Unsupported type of node in graph")
+                pass
 
         # NOTICE: Solvers are always set in the end.
         self.setup_solvers()
@@ -177,38 +179,6 @@ class DotModel():
         outfile = '%s.dot' % self.filename
         logger_.debug("Writing network to : %s" % outfile)
         nx.write_dot(self.G, outfile)
-
-    def add_molecule(self, molecule, compt):
-        """add_molecule
-        add molecule to compartment.
-
-        :param molecule: name of the molecule to add.
-        :param compt: Under which comparment to add.
-        """
-
-        moleculeDict = self.G.node[molecule]
-        poolPath = '{}/{}'.format(compt.path, molecule)
-        moleculeType = moleculeDict['type']
-
-        logger_.debug("Adding molecule %s" % molecule)
-        logger_.debug("+ With params: %s" % moleculeDict)
-
-        if moleculeType == 'pool':
-            p = self.add_pool(poolPath, molecule, moleculeDict)
-        elif "bufpool" == moleculeType:
-            self.add_bufpool(poolPath, molecule, moleculeDict)
-        elif "enzyme" == moleculeType:
-            self.addEnzyme(poolPath, molecule, moleculeDict)
-
-        # Attach a table to it.
-        if to_bool(moleculeDict.get('plot', 'false')):
-            f = 'conc'
-            if 'n_init' in moleculeDict or 'n' in moleculeDict: 
-                f = 'n'
-            self.add_recorder(molecule, f)
-
-        if to_bool(moleculeDict.get('do_test', "false")):
-            self.add_test(molecule)
 
     def add_expr_to_function(self, expr, func, field = 'conc'):
         """Reformat a given expression 
@@ -280,7 +250,7 @@ class DotModel():
     def add_reaction(self, node, compt):
         """Add a reaction node to MOOSE"""
         attr = self.G.node[node]
-        logger_.info("|- Adding a reaction: %s, %s" % (node, attr))
+        pu.info(["Adding a reaction: %s" % node, "With attribs %s:" % attr])
         reacName = node
         reacPath = '%s/%s' % (compt.path, reacName)
         reac = moose.Reac(reacPath)
@@ -312,7 +282,7 @@ class DotModel():
         :param reac: moose.Reaction element.
         :param solver: Type of solver i.e. ksolve/gsolve, string.
         """
-        mu.info("Adding a solver %s to compartment %s" % (solver, compt.path))
+        pu.info("Adding a solver %s to compartment %s" % (solver, compt.path))
         s = None
         if solver == "ksolve":
             s = moose.Ksolve('%s/ksolve' % compt.path)
@@ -320,7 +290,7 @@ class DotModel():
             s = moose.Gsolve('%s/gsolve' % compt.path)
         else:
             msg = "Unknown solver: %s. Using ksolve." % solver
-            mu.warn(msg)
+            pu.warn(msg)
 
         stoich = moose.Stoich('%s/stoich' % compt.path)
         # NOTE: must be set before compartment or path.
@@ -329,58 +299,66 @@ class DotModel():
         stoich.compartment = compt
         stoich.path = '%s/##' % compt.path
 
-    def add_pool(self, poolPath, molecule, moleculeDict):
-        """Add a moose.Pool or moose.BufPool to moose for a given molecule """
+    def add_pool(self, molecule, compt):
+        """Add a moose.Pool for a given molecule """
 
-        if moleculeDict.get('type', 'variable') == 'constant':
-            p = moose.BufPool(poolPath)
-        else:
-            p = moose.Pool(poolPath)
-
-        if 'conc_init' in moleculeDict:
-            concInit = float(moleculeDict['conc_init'])
-            logger_.debug("Setting %s.conc_init to %s" % (molecule, concInit))
-            p.concInit = concInit
-        elif 'n_init' in  moleculeDict:
-            p.nInit = float(moleculeDict['n_init'])
-        else:
-            mu.fatal("Neither conc_init nor n_init specified for %s" % molecule)
-
-        # If there is an expression for 'conc' create a function and apply a
-        # input.
-        if moleculeDict.get('conc', ''):
-            self.add_pool_expression(p, moleculeDict['conc'], 'conc')
-        elif moleculeDict.get('n', ''):
-            self.add_pool_expression(p, moleculeDict['conc'], 'n')
-        else: pass
-
-        self.molecules[molecule] = p
+        pu.info("Adding molecule %s as moose.Pool" % molecule)
+        moleculeDict = self.G.node[molecule]
+        logger_.debug("|- %s" % moleculeDict)
+        poolPath = '{}/{}'.format(compt.path, molecule)
+        p = moose.Pool(poolPath)
+        pool = self.G.node[molecule]['type']
+        self.add_parameters_to_pool(p, pool)
         return p
 
-    def add_pool_expression(self, pool, expression, field = 'conc'):
-        """generate conc of pool by a time dependent expression"""
-        logger_.info("Adding %s to pool %s" % (expression, pool))
+    def add_bufpool(self, molecule, compt):
+        """Add a moose.BufPool to moose for a given molecule """
+        pu.info("Adding molecule %s as moose.BufPool" % molecule)
+        poolPath = '{}/{}'.format(compt.path, molecule)
+        moleculeDict = self.G.node[molecule]
+        logger_.debug("|- %s" % moleculeDict)
+        p = moose.BufPool(poolPath)
+        bufpool = self.G.node[molecule]['type']
+        self.add_parameters_to_pool(p, bufpool) 
+        return p
+
+    def add_parameters_to_pool(self, moose_pool, pool):
+        if pool.concOrN == 'conc':
+            if type(pool.conc) == float:
+                logger_.debug("Setting %s.concInit to %s" % (moose_pool, pool.conc))
+                moose_pool.concInit = pool.conc
+            elif type(pool.conc) == str:
+                self.add_pool_expression(moose_pool, pool.conc, 'conc')
+            else:
+                pu.fatal([ "Unsupported conc expression on pool %s" % molecule
+                    , pool.conc
+                    ])
+        elif pool.concOrN == 'n':
+            if type(pool.n) == int:
+                logger_.debug("Setting %s.nInit to %s" % (moose_pool, pool.n))
+                moose_pool.nInit = pool.n
+            elif type(pool.n) ==  str:
+                self.add_pool_expression(moose_pool, pool.n, 'n')
+            else:
+                pu.fatal([ "Unsupported n expression on pool %s" % molecule
+                    , pool.n ])
+        else:
+            pu.fatal("Neither conc or n expression on pool %s" % molecule)
+        self.molecules[moose_pool.name] = moose_pool
+
+    def add_pool_expression(self, moose_pool, expression, field = 'conc'):
+        """generate conc of moose_pool by a time dependent expression"""
+        logger_.info("Adding %s to moose_pool %s" % (expression, moose_pool))
         
         ## fixme: issue #32 on moose-core. Function must not be created under
         ## stoich.path.
-        #func = moose.Function("%s/func_%s" % (pool.path, field))
+        #func = moose.Function("%s/func_%s" % (moose_pool.path, field))
 
         ## This is safe.
         func = moose.Function("%s/func_%s" % (self.funcPath, field))
-
         self.add_expr_to_function(expression, func, field)
         func.mode = 1
-        moose.connect(func, 'valueOut', pool, 'set'+field[0].upper()+field[1:])
-
-    def add_bufpool(self, poolPath, molecule, moleculeDict):
-        """Add a moose.Pool or moose.BufPool to moose for a given molecule """
-        p = moose.BufPool(poolPath)
-        concInit = moleculeDict.get('conc_init', 0.0)
-        p.concInit = float(concInit)
-        if moleculeDict.get('n_init', None):
-            p.nInit = float(moleculeDict['n_init'])
-        self.molecules[molecule] = p
-        return p
+        moose.connect(func, 'valueOut', moose_pool, 'set'+field[0].upper()+field[1:])
 
     def addEnzyme(self, poolPath, molecule, moleculeDict):
         """Add an enzyme """
@@ -428,7 +406,7 @@ class DotModel():
 
         # get dt from chemviz file
         dt = float(self.G.graph['graph'].get('dt', 0.01))
-        mu.info("Using dt=%s for all chemical process" % dt)
+        pu.info("Using dt=%s for all chemical process" % dt)
         for i in range(10, 16):
             moose.setClock(i, dt)
         moose.reinit()
