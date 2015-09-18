@@ -1,15 +1,19 @@
 compartment compt {
 
-    volume = 1e-15;
+    volume = "1e-15";
+
     a [ conc_init = 1, constant = true ];
     b [conc_init = 0];
     c [conc_init = 0.01];
 
     r1 [ enzyme = b, km = 4, kcat = 0.4 ];
     r2 [ enzyme = c, km = 0.01, kcat = 0.6 ];
+
     r3 [ kf = 0.001, kb = 0.01 ];
 
     a -> r1 -> b, b;
     b, b -> r2 -> a;
     a -> r3 -> b, b;
+
+    sim_time = 10;
 }
