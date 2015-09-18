@@ -26,15 +26,25 @@ compartment PSD {
 
     /*
      * pp1 and phosporylated subunits:
-     */
     dephoshp [ enzyme = pp1, km="0.4e-3", kcat=10 ];
     CamKII_up -> dephoshp ->  CamKII_down;
+     */
+
+     /*
+     Here is equivalent.
+     */
+     pp1_sp [ n_init = 0, plot = true ];
+     r_pp1_sp_cplx [ kf = 10000, kb = 0 ];
+     pp1, CamKII_up -> r_pp1_sp_cplx -> pp1_sp;
+
+     r_pp1_dephos [ kf = 10, kb = 0 ];
+     pp1_sp -> r_pp1_dephos -> pp1, CamKII_down;
 
     /*
      * Simulation related
      */
     solver = gsolve
     dt = 0.01
-    sim_time = 1000.0
+    sim_time = 10000
 }
 
