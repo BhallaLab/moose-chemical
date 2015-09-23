@@ -18,7 +18,17 @@ compartment PSD {
     // Phosphatase enzype
     pp1 [ n_init = 20, constant = true, plot = true ];
 
-    r_p0_p1 [ kf =  "7.61e-5", kb = 0.0 ];
+    
+    /* The rate constant kf of this equation is defined as v1 in paper.
+    v1 = K1(ca/KH1)^6 / (1+(ca/KH1)^3)^2 
+
+    KH1 = 0.7e-3 mole/m^3.
+    K1 = 1.5
+    NOTE: at basal [ca], v1 = 7.61e-5
+    */
+    r_p0_p1 [ kf =  "k1*(ca/kh1)^6/(1+(ca/kh1)^3)^2", kb = 0.0 
+        kh1 = "0.7e-3", k1 = 1.5 ];
+
     CamKII_down -> r_p0_p1 -> CamKII_p1;
 
     r_p1_up [ kf = "4.36e-3", kb = 0.0];
@@ -43,8 +53,10 @@ compartment PSD {
     /*
      * Simulation related
      */
-    solver = gsolve
-    dt = 0.01
-    sim_time = 10000
+    //solver = gsolve
+    dt = 0.0001
+
+    /* 2 second of Ca++ pulse [1 uM] phosphorylates 50% of CaMKII */
+    sim_time = 10
 }
 

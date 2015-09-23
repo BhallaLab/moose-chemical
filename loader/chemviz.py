@@ -180,8 +180,24 @@ class DotModel():
         logger_.debug("Writing network to : %s" % outfile)
         nx.write_dot(self.G, outfile)
 
+    def replace_local_consts(self, expr, consts, const_dict):
+        """replace all local constants in dictionary.
+        """
+        if len(consts) == 0:
+            return expr
+        elif len(const_dict) == 0:
+            mu.warn("These consts were not found in reaction: %s" % consts)
+            return expr
 
-    def add_expr_to_function(self, expr, func, field = 'conc'):
+        for c in sorted(consts, key=lambda x: len(x)):
+            if c in const_dict:
+                expr = expr.replace(c, const_dict[c])
+            else:
+                mu.warn("Expected const %s in reaction" % c)
+        return expr
+
+
+    def add_expr_to_function(self, expr, func, constants = {}, field = 'conc'):
         """Reformat a given expression 
 
         Attach a expression to given function.
@@ -192,14 +208,20 @@ class DotModel():
         astExpr = ast.parse(expr)
         i = 0
 
+        localConstants = []
         # Replace all variables with MOOSE elements.
+        pools = set()
         for node in ast.walk(astExpr):
             if type(node) == ast.Name:
                 if self.molecules.get(node.id, None) is not None:
-                    key, val = 'y%s' %i, self.molecules[node.id]
-                    expr = expr.replace(node.id, key)
-                    transDict[key] = val
-                    i += 1
+                    pools.add(node.id)
+                else: localConstants.append(node.id)
+        for i, p in enumerate(pools):
+            pp, y = self.molecules[p], "y%s" % i
+            expr = expr.replace(p, y)
+            transDict[y] = pp
+
+        expr = self.replace_local_consts(expr, localConstants, constants)
 
         logger_.debug("Adding expression: %s" % expr)
         func.expr = expr
@@ -212,22 +234,22 @@ class DotModel():
             moose.connect(func, 'requestOut', transDict[k], f)
 
 
-    def add_forward_rate_expr(self, reac, expr):
+    def add_forward_rate_expr(self, reac, expr, constants):
         """Add an expression for forward rate constant"""
         logger_.debug("++ Forward rate expression: %s" % expr)
         funcPath = '%s/forward_expr_f' % reac.path
         forwardExprFunc = moose.Function(funcPath)
-        self.add_expr_to_function(expr, forwardExprFunc)
+        self.add_expr_to_function(expr, forwardExprFunc, constants=constants)
         logger_.debug("Setting Kf of reac:%s, func:%s" % (reac, forwardExprFunc))
         moose.connect(forwardExprFunc, 'valueOut', reac, 'setKf') 
 
-    def add_backward_rate_expr(self, reac, expr):
+    def add_backward_rate_expr(self, reac, expr, constants):
         """Add an expression for backward rate constant
         """
         logger_.debug("++ Backward rate expression: %s" % expr)
         funcPath = '%s/backward_expr_f' % reac.path
         backwardFunction = moose.Function(funcPath)
-        self.add_expr_to_function(expr, backwardFunction)
+        self.add_expr_to_function(expr, backwardFunction, constants=constants)
         logger_.debug("Setting Kb of reac:%s, func:%s" % (reac, backwardFunction))
         moose.connect(backwardFunction, 'valueOut', reac, 'setKb') 
 
@@ -239,11 +261,11 @@ class DotModel():
         try:
             reac.Kf = float(kf)
         except Exception as e:
-            self.add_forward_rate_expr(reac, kf)
+            self.add_forward_rate_expr(reac, kf, constants = attr)
         try:
             reac.Kb = float(kb)
         except Exception as e:
-            self.add_backward_rate_expr(reac, kb)
+            self.add_backward_rate_expr(reac, kb, constants = attr)
 
     def add_reaction(self, node, compt):
         """Add a reaction node to MOOSE"""
@@ -356,7 +378,7 @@ class DotModel():
             elif type(pool.conc) == str:
                 self.add_pool_expression(moose_pool, pool.conc, 'conc')
             else:
-                pu.fatal([ "Unsupported conc expression on pool %s" % molecule
+                pu.fatal([ "Unsupported conc expression on pool %s" % pool
                     , pool.conc
                     ])
         elif pool.concOrN == 'n':
@@ -368,10 +390,10 @@ class DotModel():
             elif type(pool.n) ==  str:
                 self.add_pool_expression(moose_pool, pool.n, 'n')
             else:
-                pu.fatal([ "Unsupported n expression on pool %s" % molecule
+                pu.fatal([ "Unsupported n expression on pool %s" % pool
                     , pool.n ])
         else:
-            pu.fatal("Neither conc or n expression on pool %s" % molecule)
+            pu.fatal("Neither conc or n expression on pool %s" % pool)
         self.molecules[moose_pool.name] = moose_pool
 
     def add_pool_expression(self, moose_pool, expression, field = 'conc'):
@@ -445,7 +467,6 @@ class DotModel():
         for i in range(10, 16):
             moose.setClock(i, dt)
         moose.reinit()
-
 
         if 'sim_time' in self.G.graph['graph']:
             runtime = float(self.G.graph['graph']['sim_time'])
