@@ -31,7 +31,12 @@ compartment PSD {
 
     CamKII_down -> r_p0_p1 -> CamKII_p1;
 
-    r_p1_up [ kf = "4.36e-3", kb = 0.0];
+    /* From one phosporylated unit of CamKII, this reaction phosporylates all
+     * other units
+     */
+    r_p1_up [ kf = "k1*(ca/kh1)^3/(1+(ca/kh1)^3)", kb = 0.0
+        kh1 = "0.7e-3", k1 = 1.5 ];
+
     CamKII_p1 -> r_p1_up -> CamKII_up;
 
     /*
@@ -54,7 +59,7 @@ compartment PSD {
      * Simulation related
      */
     //solver = gsolve
-    dt = 0.0001
+    dt = 0.001
 
     /* 2 second of Ca++ pulse [1 uM] phosphorylates 50% of CaMKII */
     sim_time = 10

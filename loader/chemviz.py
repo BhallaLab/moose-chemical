@@ -237,7 +237,9 @@ class DotModel():
     def add_forward_rate_expr(self, reac, expr, constants):
         """Add an expression for forward rate constant"""
         logger_.debug("++ Forward rate expression: %s" % expr)
-        funcPath = '%s/forward_expr_f' % reac.path
+        # FIXME: If any function is created under ksolve.path, then it causes
+        # seg fault. Reported on github=moose-core.
+        funcPath = '%s/%s_forward_expr_f' % (self.funcPath, reac.name)
         forwardExprFunc = moose.Function(funcPath)
         self.add_expr_to_function(expr, forwardExprFunc, constants=constants)
         logger_.debug("Setting Kf of reac:%s, func:%s" % (reac, forwardExprFunc))
