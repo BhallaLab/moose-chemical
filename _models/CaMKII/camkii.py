@@ -14,7 +14,7 @@ __email__            = "dilawars@ncbs.res.in"
 __status__           = "Development"
 
 import sys
-sys.path.append('../')
+sys.path.append('../..')
 import yacml
 import moose
 
@@ -32,7 +32,7 @@ def add_extra(model):
     moose.reinit()
 
 def main():
-    modelfile = "CaMKII/camkii.yacml"
+    modelfile = "camkii.yacml"
     model = yacml.loadYACML(modelfile)
     #add_extra(model)
     model.run()
