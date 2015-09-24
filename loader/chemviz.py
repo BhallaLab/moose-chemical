@@ -48,6 +48,11 @@ def to_bool(arg):
         return False
     return True
 
+def to_float(string):
+    """Convert a given string to float """
+    string = string.replace('"', '')
+    return float(string)
+
 class DotModel():
     '''
     Parse graphviz file and populate a chemical model in MOOSE.
@@ -128,9 +133,13 @@ class DotModel():
             try:
                 self.G = nx.read_dot(dotFile.name)
             except Exception as e:
-                pu.error(["Failed to load YACML file." 
-                    , "Error was %s" % e
-                    ])
+                try:
+                    import pygraphviz 
+                    self.G = nx.from_agraph(pygraphviz.AGraph(file=dotFile.name))
+                except:
+                    pu.fatal(["Failed to load graphviz file"
+                        , "Tried pydot and pygraphviz"
+                        ])
 
         self.G = nx.MultiDiGraph(self.G)
         assert self.G.number_of_nodes() > 0, "Zero molecules"
@@ -150,7 +159,7 @@ class DotModel():
         self.init_moose(compt)
 
         compt = self.__cur_compt__ 
-        compt.volume = float(self.G.graph['graph']['volume'])
+        compt.volume = to_float(self.G.graph['graph']['volume'])
 
         # make sure the pools/buffpools are added to MOOSE before adding
         # reactions.
