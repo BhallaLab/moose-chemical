@@ -17,8 +17,13 @@ compartment PSD {
     // Phosphatase enzype
     pp1 [ n_init = 20, constant = true, plot = true ];
 
-    I1 [ conc_init = "0.1e-3", constant = true ];
+    I1 [ conc_init = "0.1e-3" ];
 
+    //I1P [ plot = true 
+    //    , conc = "I1*(Vpka/Vcan)*(1+(ca/kh2)^3)/(ca/kh2)^3"
+    //    , Vpka = 1.0, Vcan = 1.0, kh2 = "0.3e-3"
+    //    ];
+    I1P [ conc = "I1+ca" , plot = true];
 
     /* The rate constant kf of this equation is defined as v1 in paper.
     v1 = K1(ca/KH1)^6 / (1+(ca/KH1)^3)^2 
@@ -58,14 +63,6 @@ compartment PSD {
     /// r_pp1_dephos [ kf = 10, kb = 0 ];
     /// pp1_sp -> r_pp1_dephos -> pp1, CamKII_down;
     /// */
-
-    ////************************************************************************
-    /// * I1P conc depends on I1
-    /// */
-    ///I1P [ plot = true 
-    ///    , conc = "I1*(Vpka/Vcan)*(1+(ca/kh2)^3)/(ca/kh2)^3"
-    ///    , Vpka = 1.0, Vcan = 1.0, kh2 = "0.3e-3"
-    ///    ];
 
     /*
      * Simulation related
