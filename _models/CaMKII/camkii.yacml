@@ -70,6 +70,6 @@ compartment PSD {
     dt = 0.001
 
     /* 2 second of Ca++ pulse [1 uM] phosphorylates 50% of CaMKII */
-    sim_time = 10
+    sim_time = 1000
 }
 
