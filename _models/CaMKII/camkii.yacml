@@ -3,8 +3,7 @@ compartment PSD {
     // 10^6 nano-meter^3.
     volume = "1e-21"
 
-    ca [ conc="1e-4+1e-3*(1 + sin(0.01*t) + 1/3*sin(0.03*t) +
-    1/5*(sin(0.5*t)))", plot = true ];
+    ca [ conc="1e-4+1e-3*(1 + sin(0.01*t) + 1/3*sin(0.03*t) + 1/5*(sin(0.5*t)))", plot = true ];
 
     // CamKII molecules with 0 subunits of 6 subunits of ring phosporylated.
     CamKII_down [n_init = 20, plot = true ];
@@ -18,7 +17,9 @@ compartment PSD {
     // Phosphatase enzype
     pp1 [ n_init = 20, constant = true, plot = true ];
 
-    
+    I1 [ conc_init = "0.1e-3", constant = true ];
+
+
     /* The rate constant kf of this equation is defined as v1 in paper.
     v1 = K1(ca/KH1)^6 / (1+(ca/KH1)^3)^2 
 
@@ -33,28 +34,38 @@ compartment PSD {
     CamKII_down -> r_p0_p1 -> CamKII_p1;
 
     /* From one phosporylated unit of CamKII, this reaction phosporylates all
-     * other units
+     * other units. The phosporylated unit acts as auto-catalyst.
      */
 
     r_p1_up [ kf = "k1*(ca/kh1)^3/(1+(ca/kh1)^3)", kb = 0.0
         kh1 = "0.7e-3", k1 = 1.5 ];
     CamKII_p1 -> r_p1_up -> CamKII_up;
 
-    /*
-     * pp1 and phosporylated subunits:
+    /*************************************************************************
+     * FIXME: pp1 and phosporylated subunits:
+     * Km = 0.4 uM = 0.4e-3. That value is way to low to influent the reaction.
+     * In this scheme, we use 0.4
      */
-    dephoshp [ enzyme = pp1, km="0.4e-3", kcat=10 ];
+    dephoshp [ enzyme = pp1, km=0.4, kcat=10 ];
     CamKII_up -> dephoshp ->  CamKII_down;
 
-     /*
-     Here is equivalent.
-     pp1_sp [ n_init = 0, plot = true ];
-     r_pp1_sp_cplx [ kf = 10000, kb = 0 ];
-     pp1, CamKII_up -> r_pp1_sp_cplx -> pp1_sp;
+    /// /*
+    /// Here is equivalent.
+    /// pp1_sp [ n_init = 0, plot = true ];
+    /// r_pp1_sp_cplx [ kf = 25.000, kb = 0 ];
+    /// pp1, CamKII_up -> r_pp1_sp_cplx -> pp1_sp;
 
-     r_pp1_dephos [ kf = 10, kb = 0 ];
-     pp1_sp -> r_pp1_dephos -> pp1, CamKII_down;
-     */
+    /// r_pp1_dephos [ kf = 10, kb = 0 ];
+    /// pp1_sp -> r_pp1_dephos -> pp1, CamKII_down;
+    /// */
+
+    ////************************************************************************
+    /// * I1P conc depends on I1
+    /// */
+    ///I1P [ plot = true 
+    ///    , conc = "I1*(Vpka/Vcan)*(1+(ca/kh2)^3)/(ca/kh2)^3"
+    ///    , Vpka = 1.0, Vcan = 1.0, kh2 = "0.3e-3"
+    ///    ];
 
     /*
      * Simulation related

@@ -53,6 +53,21 @@ def to_float(string):
     string = string.replace('"', '')
     return float(string)
 
+def replace_in_expr(frm, to, expr):
+    #repExpr = re.compile('(?P<l>\W){0}(?P<r>\W)|(?P<l>\W?){0}(?P<r>\W)|(?P<l>\W){0}(?P<r>\W?)'.format(frm))
+    repExpr = re.compile(r'[\w]{0}[\w]'.format(frm))
+    idents = repExpr.findall(expr)
+    # protect these substrings.
+    for i, p in enumerate(idents):
+        expr = expr.replace(p, "##%s##" % i)
+
+    # Now replace the given frm -> to
+    expr = expr.replace(frm, to)
+    # Put back the protected string.
+    for i, p in enumerate(idents):
+        expr = expr.replace('##%s##' % i, p)
+    return expr
+
 class DotModel():
     '''
     Parse graphviz file and populate a chemical model in MOOSE.
@@ -199,10 +214,12 @@ class DotModel():
             return expr
 
         for c in sorted(consts, key=lambda x: len(x)):
+            if c == 't':
+                continue
             if c in const_dict:
-                expr = expr.replace(c, const_dict[c])
+                expr = replace_in_expr(c, const_dict[c], expr)
             else:
-                mu.warn("Expected const %s in reaction" % c)
+                pass
         return expr
 
 
@@ -227,12 +244,11 @@ class DotModel():
                 else: localConstants.append(node.id)
         for i, p in enumerate(pools):
             pp, y = self.molecules[p], "y%s" % i
-            expr = expr.replace(p, y)
+            expr = replace_in_expr(p, y, expr)
             transDict[y] = pp
 
         expr = self.replace_local_consts(expr, localConstants, constants)
-
-        logger_.debug("Adding expression: %s" % expr)
+        logger_.debug("|- Adding expression: %s" % expr)
         func.expr = expr
 
         # After replacing variables with appropriate yi's, connect
@@ -363,8 +379,7 @@ class DotModel():
         poolPath = '{}/{}'.format(compt.path, molecule)
         p = moose.Pool(poolPath)
         pool = self.G.node[molecule]['type']
-        isPlot = to_bool(moleculeDict.get('plot', 'false'))
-        self.add_parameters_to_pool(p, pool, plot=isPlot)
+        self.add_parameters_to_pool(p, pool, moleculeDict)
         return p
 
     def add_bufpool(self, molecule, compt):
@@ -375,11 +390,11 @@ class DotModel():
         logger_.debug("|- %s" % moleculeDict)
         p = moose.BufPool(poolPath)
         bufpool = self.G.node[molecule]['type']
-        isPlot = to_bool(moleculeDict.get('plot', 'false'))
-        self.add_parameters_to_pool(p, bufpool, isPlot) 
+        self.add_parameters_to_pool(p, bufpool, moleculeDict) 
         return p
 
-    def add_parameters_to_pool(self, moose_pool, pool, plot = False):
+    def add_parameters_to_pool(self, moose_pool, pool, attribs):
+        plot = to_bool(attribs.get('plot', 'false'))
         if pool.concOrN == 'conc':
             if plot:
                 self.add_recorder(moose_pool, 'conc')
@@ -387,7 +402,10 @@ class DotModel():
                 logger_.debug("Setting %s.concInit to %s" % (moose_pool, pool.conc))
                 moose_pool.concInit = pool.conc
             elif type(pool.conc) == str:
-                self.add_pool_expression(moose_pool, pool.conc, 'conc')
+                self.add_pool_expression(moose_pool, pool.conc
+                        , 'conc',
+                        constants = attribs
+                        )
             else:
                 pu.fatal([ "Unsupported conc expression on pool %s" % pool
                     , pool.conc
@@ -399,7 +417,9 @@ class DotModel():
                 logger_.debug("Setting %s.nInit to %s" % (moose_pool, pool.n))
                 moose_pool.nInit = pool.n
             elif type(pool.n) ==  str:
-                self.add_pool_expression(moose_pool, pool.n, 'n')
+                self.add_pool_expression(moose_pool, pool.n, field = 'n'
+                        , constants = attribs
+                        )
             else:
                 pu.fatal([ "Unsupported n expression on pool %s" % pool
                     , pool.n ])
@@ -407,7 +427,8 @@ class DotModel():
             pu.fatal("Neither conc or n expression on pool %s" % pool)
         self.molecules[moose_pool.name] = moose_pool
 
-    def add_pool_expression(self, moose_pool, expression, field = 'conc'):
+    def add_pool_expression(self, moose_pool, expression
+            , field = 'conc', constants = {}):
         """generate conc of moose_pool by a time dependent expression"""
         logger_.info("Adding %s to moose_pool %s" % (expression, moose_pool))
         
@@ -417,24 +438,9 @@ class DotModel():
 
         ## This is safe.
         func = moose.Function("%s/func_%s" % (self.funcPath, field))
-        self.add_expr_to_function(expression, func, field)
+        self.add_expr_to_function(expression, func, field = field, constants = constants)
         func.mode = 1
         moose.connect(func, 'valueOut', moose_pool, 'set'+field[0].upper()+field[1:])
-
-    ##def add_enzyme(self, molecule, compt):
-    ##    """Add an enzyme """
-    ##    enzPath = '{}/{}'.format(compt.path, molecule)
-    ##    enz =  moose.Enz(enzPath)
-    ##    e = self.G.node[molecule]['type']
-    ##    if type(e.km) == float:
-    ##        enz.Km = e.km
-    ##    else:
-    ##        pu.dump("TODO", "Support string expression on Km")
-    ##    if type(e.kcat) == float:
-    ##        enz.kcat = e.kcat
-    ##    else:
-    ##        pu.dump("TODO", "Support string expression on kcat")
-    ##    return enz
 
     def add_test(self, molecule):
         """To enable a  test, we need to attach a recorder """
