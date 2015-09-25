@@ -25,34 +25,34 @@ compartment PSD {
     //    ];
     I1P [ conc = "I1+ca" , plot = true];
 
-    /* The rate constant kf of this equation is defined as v1 in paper.
-    v1 = K1(ca/KH1)^6 / (1+(ca/KH1)^3)^2 
+    ///* The rate constant kf of this equation is defined as v1 in paper.
+    //v1 = K1(ca/KH1)^6 / (1+(ca/KH1)^3)^2 
 
-    KH1 = 0.7e-3 mole/m^3.
-    K1 = 1.5
-    NOTE: at basal [ca], v1 = 7.61e-5
-    */
+    //KH1 = 0.7e-3 mole/m^3.
+    //K1 = 1.5
+    //NOTE: at basal [ca], v1 = 7.61e-5
+    //*/
 
-    r_p0_p1 [ kf =  "k1*(ca/kh1)^6/(1+(ca/kh1)^3)^2", kb = 0.0 
-        kh1 = "0.7e-3", k1 = 1.5 ];
+    //r_p0_p1 [ kf =  "k1*(ca/kh1)^6/(1+(ca/kh1)^3)^2", kb = 0.0 
+    //    kh1 = "0.7e-3", k1 = 1.5 ];
 
-    CamKII_down -> r_p0_p1 -> CamKII_p1;
+    //CamKII_down -> r_p0_p1 -> CamKII_p1;
 
-    /* From one phosporylated unit of CamKII, this reaction phosporylates all
-     * other units. The phosporylated unit acts as auto-catalyst.
-     */
+    ///* From one phosporylated unit of CamKII, this reaction phosporylates all
+    // * other units. The phosporylated unit acts as auto-catalyst.
+    // */
 
-    r_p1_up [ kf = "k1*(ca/kh1)^3/(1+(ca/kh1)^3)", kb = 0.0
-        kh1 = "0.7e-3", k1 = 1.5 ];
-    CamKII_p1 -> r_p1_up -> CamKII_up;
+    //r_p1_up [ kf = "k1*(ca/kh1)^3/(1+(ca/kh1)^3)", kb = 0.0
+    //    kh1 = "0.7e-3", k1 = 1.5 ];
+    //CamKII_p1 -> r_p1_up -> CamKII_up;
 
-    /*************************************************************************
-     * FIXME: pp1 and phosporylated subunits:
-     * Km = 0.4 uM = 0.4e-3. That value is way to low to influent the reaction.
-     * In this scheme, we use 0.4
-     */
-    dephoshp [ enzyme = pp1, km=0.4, kcat=10 ];
-    CamKII_up -> dephoshp ->  CamKII_down;
+    ///*************************************************************************
+    // * FIXME: pp1 and phosporylated subunits:
+    // * Km = 0.4 uM = 0.4e-3. That value is way to low to influent the reaction.
+    // * In this scheme, we use 0.4
+    // */
+    //dephoshp [ enzyme = pp1, km=0.4, kcat=10 ];
+    //CamKII_up -> dephoshp ->  CamKII_down;
 
     /// /*
     /// Here is equivalent.

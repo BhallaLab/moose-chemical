@@ -254,8 +254,8 @@ class DotModel():
         # After replacing variables with appropriate yi's, connect
         # them to appropriate MOOSE elements.
         for k in transDict:
-            logger_.debug("Connecting %s with %s" % (k, transDict[k]))
             f = 'get' + field[0].upper() + field[1:]
+            logger_.debug("Connecting %s <-- %s.%s" % (k, transDict[k], f))
             moose.connect(func, 'requestOut', transDict[k], f)
 
 
@@ -437,9 +437,12 @@ class DotModel():
         #func = moose.Function("%s/func_%s" % (moose_pool.path, field))
 
         ## This is safe.
-        func = moose.Function("%s/func_%s" % (self.funcPath, field))
+        func = moose.Function("%s/fun_%s_%s" % (self.funcPath, moose_pool.name, field))
         self.add_expr_to_function(expression, func, field = field, constants = constants)
         func.mode = 1
+        outfield = 'set' + field[0].upper()+field[1:]
+        logger_.debug("Connecting func %s.valueOut --> %s.%s" % (func
+            , moose_pool , outfield))
         moose.connect(func, 'valueOut', moose_pool, 'set'+field[0].upper()+field[1:])
 
     def add_test(self, molecule):
