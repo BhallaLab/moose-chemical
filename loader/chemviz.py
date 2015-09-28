@@ -231,17 +231,30 @@ class DotModel():
         Also connect y0, y1 etc to molecules.
         """
         transDict = {}
-        astExpr = ast.parse(expr)
-        i = 0
+        ids = []
+        try:
+            astExpr = ast.parse(expr)
+            i = 0
+            localConstants = []
+            # Replace all variables with MOOSE elements.
+            for node in ast.walk(astExpr):
+                if type(node) == ast.Name:
+                    ids.append(node.id)
+        except SyntaxError as e:
+            # Not a python expression. Treat it as raw expression. Extract all
+            # the ids.
+            ids = re.findall(r'(?P<id>[_a-zA-Z]\w+)', expr)
 
-        localConstants = []
-        # Replace all variables with MOOSE elements.
+        # If id is found in molecules, its a moose.Pool/BufPool, else it is a
+        # constant which must be replaced by a value.
+        # NOTE: Or it is 't'
         pools = set()
-        for node in ast.walk(astExpr):
-            if type(node) == ast.Name:
-                if self.molecules.get(node.id, None) is not None:
-                    pools.add(node.id)
-                else: localConstants.append(node.id)
+        localConstants = []
+        for i in ids:
+            if self.molecules.get(i, None) is not None:
+                pools.add(i)
+            else: 
+                localConstants.append(i)
         for i, p in enumerate(pools):
             pp, y = self.molecules[p], "y%s" % i
             expr = replace_in_expr(p, y, expr)

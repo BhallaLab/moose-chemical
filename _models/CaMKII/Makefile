@@ -6,4 +6,4 @@ simulate : ./camkii.py ./camkii.yacml
 	python camkii.py   | tee __log__.txt
 
 plot : simulate 
-	~/Scripts/plot_csv.py -i camkii.yacml.dat -y 1-5 -s -o camkii.yacml.png
+	~/Scripts/plot_csv.py -i camkii.yacml.dat -y 1-6 -s -o camkii.yacml.png
