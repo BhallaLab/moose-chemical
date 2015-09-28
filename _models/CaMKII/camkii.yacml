@@ -4,7 +4,7 @@ compartment PSD {
     volume = "1e-21"
 
     //ca [ conc="1e-4+1e-3*(1 + sin(0.01*t+100) + 1/3*sin(0.03*t+100) + 1/5*(sin(0.5*t+100)))", plot = true ];
-    ca [ conc = "1e-4+1e-3*(t>5 && t<7?1:0)", plot = True ];
+    ca [ conc = "1e-4+1e-3*(t>5 && t<10?1:0)", plot = True ];
 
     // CamKII molecules with 0 subunits of 6 subunits of ring phosporylated.
     CamKII_down [n_init = 20, plot = true ];
