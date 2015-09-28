@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/dilawar/moose-chemical.svg)](https://travis-ci.org/dilawar/moose-chemical)
+[![Build Status](https://travis-ci.org/dilawar/yacml.svg)](https://travis-ci.org/dilawar/yacml)
 
 YACML
 
