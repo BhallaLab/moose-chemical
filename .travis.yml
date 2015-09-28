@@ -10,7 +10,7 @@ install:
   - sudo apt-get update
   - sudo apt-get install moose-python 
   - sudo apt-get install python-pip python-networkx
-  - pip install pygraphviz --upgrade 
+  - pip install pygraphviz --user
 
 script:
   - ( cd ./test && ./test_all.sh )
