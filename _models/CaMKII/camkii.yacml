@@ -28,12 +28,10 @@ compartment PSD {
 
     /* The rate constant kf of this equation is defined as v1 in paper.
     v1 = K1(ca/KH1)^6 / (1+(ca/KH1)^3)^2 
-
     KH1 = 0.7e-3 mole/m^3.
     K1 = 1.5
     NOTE: at basal [ca], v1 = 7.61e-5
     */
-
     r_p0_p1 [ kf =  "k1*(ca/kh1)^6/(1+(ca/kh1)^3)^2", kb = 0.0 
         kh1 = "0.7e-3", k1 = 1.5 ];
 
@@ -46,37 +44,27 @@ compartment PSD {
     r_p1_up [ kf = "k1*(ca/kh1)^3/(1+(ca/kh1)^3)", kb = 0.0 kh1 = "0.7e-3", k1 = 1.5 ];
     CamKII_p1 -> r_p1_up -> CamKII_up;
 
-    /*************************************************************************
-     * FIXME: pp1 and phosporylated subunits:
-     * Km = 0.4 uM = 0.4e-3. That value is way to low to influent the reaction.
-     * In this scheme, we use 0.4
-     * NOTE: DO NOT USE THIS. Use the equivalent model. One intermediate species
-     * is used by other set of reactions as well.
+    /*
+       This reaction dephoshprylates up state into down state.
      */
-    //dephoshp [ enzyme = pp1, km=0.4, kcat=10 ];
-    //CamKII_up -> dephoshp ->  CamKII_down;
 
-   // /*
-   //  Here is equivalent.
-   //  */
-     pp1_sp [ n_init = 0, plot = true ];
-     r_pp1_sp_cplx [ kf = 25.000, kb = 0 ];
-     pp1, CamKII_up -> r_pp1_sp_cplx -> pp1_sp;
+    pp1_sp [ n_init = 0, plot = true ];
+    r_pp1_sp_cplx [ kf = "25e4", kb = 0 ];
+    pp1, CamKII_up -> r_pp1_sp_cplx -> pp1_sp;
 
-     r_pp1_dephos [ kf = 10, kb = 0 ];
-     pp1_sp -> r_pp1_dephos -> pp1, CamKII_down;
+    r_pp1_dephos [ kf = 10, kb = 0 ];
+    pp1_sp -> r_pp1_dephos -> pp1, CamKII_down;
 
+    /*********************************************************************
+     * PP1.Sp + I1P <----> PP1.Sp.I1P 
+     * PP1.Sp ---> PP1 + S
+     */
+    //PP1_sp_I1P [n_init = 0 ];
+    //r_pp1sp_i1p_to_pp1SpI1p [ kf = "1e5", kb = 0.1 ];
+    //pp1_sp, I1P -> r_pp1sp_i1p_to_pp1SpI1p -> PP1_sp_I1P;
 
-   //  /*********************************************************************
-   //  * PP1.Sp + I1P <----> PP1.Sp.I1P 
-   //  * PP1.Sp ---> PP1 + S
-   //  ***/
-    PP1_sp_I1P [n_init = 0 ];
-    r_pp1sp_i1p_to_pp1SpI1p [ kf = "1e5", kb = 0.1 ];
-    pp1_sp, I1P -> r_pp1sp_i1p_to_pp1SpI1p -> PP1_sp_I1P;
-    
-    r_pp1sp_dissoc [ kf = "9.26e-6", kb = 0 ];
-    pp1_sp -> r_pp1sp_dissoc -> pp1, CamKII_down;
+    //r_pp1sp_dissoc [ kf = "9.26e-6", kb = 0 ];
+    //pp1_sp -> r_pp1sp_dissoc -> pp1, CamKII_down;
 
     /*
      * Simulation related
