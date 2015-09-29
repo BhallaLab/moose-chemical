@@ -21,6 +21,7 @@ import moose.utils as mu
 import ast
 import re
 from utils import test_expr as te
+from utils import expression as expr
 import operator as ops
 import sys
 from collections import defaultdict
@@ -254,7 +255,7 @@ class DotModel():
         except SyntaxError as e:
             # Not a python expression. Treat it as raw expression. Extract all
             # the ids.
-            ids = re.findall(r'(?P<id>[_a-zA-Z]\w+)', expr)
+            ids = expr.get_ids(expr)
 
         # Find a subexpression, insert into expression. If expression changes,
         # call this function again.
