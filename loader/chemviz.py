@@ -222,6 +222,18 @@ class DotModel():
                 pass
         return expr
 
+    def replace_possible_subexpr(self, expr, constants, ids):
+        """ If a id value can be converted to float, its a constant. Else its a
+        subexpression
+        """
+        for i in ids:
+            if i in constants:
+                try: 
+                    v = float(constants[i])
+                except:
+                    expr = expr.replace(i, constants[i])
+        return expr
+
 
     def add_expr_to_function(self, expr, func, constants = {}, field = 'conc'):
         """Reformat a given expression 
@@ -235,7 +247,6 @@ class DotModel():
         try:
             astExpr = ast.parse(expr)
             i = 0
-            localConstants = []
             # Replace all variables with MOOSE elements.
             for node in ast.walk(astExpr):
                 if type(node) == ast.Name:
@@ -245,22 +256,32 @@ class DotModel():
             # the ids.
             ids = re.findall(r'(?P<id>[_a-zA-Z]\w+)', expr)
 
+        # Find a subexpression, insert into expression. If expression changes,
+        # call this function again.
+        new_expr = self.replace_possible_subexpr(expr, constants, ids)
+        if new_expr != expr:
+            # and serach of ids again.
+            return self.add_expr_to_function(new_expr, func, constants, field)
+
         # If id is found in molecules, its a moose.Pool/BufPool, else it is a
         # constant which must be replaced by a value.
         # NOTE: Or it is 't'
         pools = set()
         localConstants = []
+
+
         for i in ids:
             if self.molecules.get(i, None) is not None:
                 pools.add(i)
             else: 
+                # If this is a numerical value, put it in constants else replace
                 localConstants.append(i)
         for i, p in enumerate(pools):
             pp, y = self.molecules[p], "y%s" % i
             expr = replace_in_expr(p, y, expr)
             transDict[y] = pp
-
         expr = self.replace_local_consts(expr, localConstants, constants)
+
         logger_.debug("|- Adding expression: %s" % expr)
         func.expr = expr
 
@@ -445,12 +466,13 @@ class DotModel():
         """generate conc of moose_pool by a time dependent expression"""
         logger_.info("Adding %s to moose_pool %s" % (expression, moose_pool))
         
-        ## fixme: issue #32 on moose-core. Function must not be created under
+        ## FIXMe: issue #32 on moose-core. Function must not be created under
         ## stoich.path.
-        #func = moose.Function("%s/func_%s" % (moose_pool.path, field))
+        ##func = moose.Function("%s/func_%s" % (moose_pool.path, field))
 
-        ## This is safe.
+        ## This is safe but does not work with stochastic solver.
         func = moose.Function("%s/fun_%s_%s" % (self.funcPath, moose_pool.name, field))
+
         self.add_expr_to_function(expression, func, field = field, constants = constants)
         func.mode = 1
         outfield = 'set' + field[0].upper()+field[1:]
