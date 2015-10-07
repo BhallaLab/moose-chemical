@@ -12,6 +12,7 @@ __maintainer__       = "Dilawar Singh"
 __email__            = "dilawars@ncbs.res.in"
 __status__           = "Development"
 
+import re
 
 def get_ids(expr):
     ids = re.findall(r'(?P<id>[_a-zA-Z]\w+)', expr)

@@ -73,6 +73,25 @@ class Reaction(object):
         self.kb = attribs.get('kb', 0)
         self.kinetic = attribs.get('expr', attribs.get('kinetic', None))
 
+class Variable(object):
+    """Docstring for Variable"""
+    def __init__(self, name, attribs):
+        super(Variable, self).__init__()
+        self.name = name
+        self.assign(attribs)
+        self.expr = None
+        # Mode 0 for simple expression, 1 for differential equation.
+        self.mode = "val"
+
+    def assign(self, attibs):
+        if self.name in attibs:
+            self.expr = str(attibs[self.name])
+        elif "%s_rate" % self.name in attibs:
+            self.expr = str(attibs["%s_rate" % self.name])
+            self.mode = "rate"
+        else:
+            raise UserWarning("Could not find {0} or {0}_rate".format(self.name))
+
 class EnzymaticReaction(Reaction):
     """docstring for EnzymaticReaction"""
 
@@ -92,8 +111,9 @@ def determine_type(node, graph):
             return BufPool(node, attribs)
         else:
             return Pool(node, attribs)
-
-    elif len(set(['kf', 'kb', 'expr', 'kinetic']).intersection(attrset)) != 0:
+    if len(set(['%s'%node, "%s_rate" % node]).intersection(attrset)) != 0:
+        return Variable(node, attribs)
+    elif len(set(['kf', 'kb', 'kinetic']).intersection(attrset)) != 0:
         return Reaction(node, attribs)
     elif len(set(['enzyme', 'km', 'kcat']).intersection(attrset)) != 0:
         return EnzymaticReaction(node, attribs)
