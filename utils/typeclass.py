@@ -71,7 +71,7 @@ class Reaction(object):
         self.name = name
         self.kf = attribs.get('kf', 0)
         self.kb = attribs.get('kb', 0)
-        self.kinetic = attribs.get('expr', attribs.get('kinetic', None))
+        self.rate = attribs.get('rate_of_reac')
 
 class Variable(object):
     """Docstring for Variable"""
@@ -111,9 +111,9 @@ def determine_type(node, graph):
             return BufPool(node, attribs)
         else:
             return Pool(node, attribs)
-    if len(set(['%s'%node, "%s_rate" % node]).intersection(attrset)) != 0:
+    if len(set(['%s'%node]).intersection(attrset)) != 0:
         return Variable(node, attribs)
-    elif len(set(['kf', 'kb', 'kinetic']).intersection(attrset)) != 0:
+    elif len(set(['kf', 'kb', 'rate_of_reac']).intersection(attrset)) != 0:
         return Reaction(node, attribs)
     elif len(set(['enzyme', 'km', 'kcat']).intersection(attrset)) != 0:
         return EnzymaticReaction(node, attribs)

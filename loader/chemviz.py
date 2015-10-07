@@ -195,12 +195,10 @@ class DotModel():
         # Now add expression to pools.
         logger_.info("============ Adding parameters/expressions to pools")
         for p in self.molecules:
-            assert p
             self.add_parameters_to_pool(p)
 
         logger_.info("============ Adding parameters/expressions to variables")
         for v in self.variables:
-            assert v
             self.add_parameters_to_var(v)
 
         for node in self.G.nodes():
@@ -280,12 +278,13 @@ class DotModel():
         if node in self.functions:
             logger_.info("Function %s already exists" % node)
             return self.functions[node]
+
         f = moose.Function(get_path_of_node(compt, node))
         # NOTE: Always compute value of function. If derivative is given then
         # use increment/decrement messages else just set the value.
         f.mode = 1 
+        logger_.debug("moose.Function mode: %s" % f.mode)
         self.variables[node] = f
-        return f
 
     def replace_local_consts(self, expr, consts, const_dict):
         """replace all local constants in dictionary.
@@ -355,8 +354,8 @@ class DotModel():
             expr = replace_in_expr(p, y, expr)
             transDict[y] = pp
 
-        for i, v in enumerate(variables):
-            v, y = self.variables[v], "y%s" % (len(pools)+i)
+        for i, var in enumerate(variables):
+            v, y = self.variables[var], "y%s" % (len(pools)+i)
             expr = replace_in_expr(v.name, y, expr)
             transDict[y] = v
 
@@ -518,9 +517,8 @@ class DotModel():
         plot = to_bool(attribs.get('plot', 'false'))
         if plot:
             self.add_recorder(mooseFunc, 'value')
-
-        funcExpr = attribs.get(variable, attribs.get('%s_rate' % variable))
-        assert funcExpr, "No expression {0} or {0}_rate".format(variable)
+        funcExpr = attribs.get(variable, attribs.get('%s' % variable))
+        assert funcExpr, "No expression {0}".format(variable)
         self.add_expr_to_function(funcExpr, mooseFunc, constants = attribs)
 
     def add_parameters_to_pool(self, pool):
