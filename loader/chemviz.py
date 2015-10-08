@@ -266,8 +266,10 @@ class DotModel():
         self.molecules[node] = p
         if  attr.get('conc_init', False):
             p.concInit = float(attr['conc_init'])
+            logger_.debug("|| set Conc_init to %s" % p.concInit)
         elif attr.get('n_init', False):
             p.nInit = int(attr['n_init'])
+            logger_.debug("|| set n_init to %s" % p.nInit)
         else:
             pass
 
@@ -492,7 +494,10 @@ class DotModel():
         stoich.path = '%s/##' % compt.path
 
     def add_pool(self, molecule, compt):
-        """Add a moose.Pool for a given molecule """
+        """Add a moose.Pool for a given molecule. DO NOT ADD parameters to pool
+        here since expression might depend on other variables and pool which are
+        not yet added. This is like Forward Declaration.
+        """
 
         logger_.info("Adding molecule %s as moose.Pool" % molecule)
         moleculeDict = self.G.node[molecule]
@@ -522,6 +527,9 @@ class DotModel():
         self.add_expr_to_function(funcExpr, mooseFunc, constants = attribs)
 
     def add_parameters_to_pool(self, pool):
+        """Add expression to Pool/BufPool. Initial concentration/number has
+        already be assigned by add_molecules function.
+        """
         moose_pool = self.molecules[pool]
         attribs = self.G.node[pool]
         plot = to_bool(attribs.get('plot', 'false'))
@@ -536,43 +544,47 @@ class DotModel():
 
     def add_pool_expression(self, moose_pool, attribs):
         """generate conc of moose_pool by a time dependent expression"""
-        field = attribs['type'].concOrN
+
+        typeObj = attribs['type']
+        field = typeObj.concOrN
         expression = None
         if field == 'conc':
-            expression = attribs.get('conc', None)
+            expression = typeObj.conc
             try: 
                 moose_pool.concInit = float(expression)
-                moose_pool.conc = float(expression)
                 logger_.debug("| Assigned conc=%s to pool %s" % (moose_pool.conc, moose_pool))
+                moose_pool.conc = float(expression)
                 return moose_pool
             except:
                 pass
         elif field == 'n':
-            expression = attribs.get('n', '')
+            expression = typeObj.n
             try:
                 moose_pool.nInit = float(expression)
-                moose_pool.n = int(expression)
                 logger_.debug("| Assigned n=%s to pool %s" % (moose_pool.n, moose_pool))
+                moose_pool.n = int(expression)
                 return moose_pool
             except:
                 pass
 
-        if not expression:
-            return None
-        
+        assert expression, "Pool must some expression %s" % attribs
         logger_.info("Adding expr %s to moose_pool %s" % (expression, moose_pool))
-        ## FIXMe: issue #32 on moose-core. Function must not be created under
+        ## FIXME: issue #32 on moose-core. Function must not be created under
         ## stoich.path.
         func = moose.Function("%s/func_%s" % (moose_pool.path, field))
-        func.mode = 1
+        func.mode = 0
 
-        ## This is safe but does not work with stochastic solver.
+        ## FIXME: This is safe but does not work with stochastic solver.
         #func = moose.Function("%s/fun_%s_%s" % (self.funcPath, moose_pool.name, field))
-
         self.add_expr_to_function(expression, func, field = field, constants = attribs)
-        outfield = 'set' + field[0].upper()+field[1:]
-        logger_.debug("|WRITE| %s.valueOut --> %s.%s" % (func.path
-            , moose_pool.path, outfield))
+
+        source = 'valueOut'
+        if not typeObj.rate:
+            outfield = 'set' + field[0].upper()+field[1:]
+        else:
+            outfield = 'increment'
+        logger_.debug("|WRITE| %s.%s --> %s.%s" % (func.path
+            , source, moose_pool.path, outfield))
         moose.connect(func, 'valueOut', moose_pool, outfield)
 
     def add_test(self, molecule):

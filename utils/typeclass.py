@@ -23,15 +23,28 @@ class Pool(object):
         self.name = name
         self.concOrN = 'conc'
         self.conc = 0.0
+        self.concInit = 0.0
+        self.nInit = 0.0
         self.n = 0
+        self.rate = False
         self.assign(attribs)
 
     def assign(self, attribs):
         if 'conc_init' in attribs:
-            self.conc = float(attribs['conc_init'])
+            self.concInit = float(attribs['conc_init'])
         elif 'n_init' in attribs:
             self.concOrN = 'n'
-            self.n = int(attribs['n_init'])
+            self.nInit = int(attribs['n_init'])
+        else:
+            pass
+        if 'n_rate' in attribs:
+            self.concOrN = 'n'
+            self.n = attribs['n_rate']
+            self.rate = True
+        elif 'conc_rate' in attribs:
+            self.concOrN = 'conc'
+            self.conc = attribs['conc_rate']
+            self.rate = True
         else: 
             if 'conc' in attribs:
                 self.conc = str(attribs['conc'])
@@ -39,9 +52,10 @@ class Pool(object):
                 self.n = attribs['n']
                 self.concOrN = 'n'
             else:
-                pu.warn(["Expecting 'conc_init', 'conc', 'n_init', or 'n'"
-                    , "Got: %s" % attribs
-                    ])
+                pu.warn(["Expecting one of the following"
+                , "conc, n, conc_init, n_init, conc_rate, n_rate" 
+                , "Got %s" % (",".join(attribs.keys()))
+                ])
 
 class BufPool(Pool):
     """docstring for BufPool"""
@@ -106,17 +120,26 @@ def determine_type(node, graph):
     """Determine the type of node """
     attribs = graph.node[node]
     attrset = set(attribs)
-    if len(set(['conc_init','n_init','n','conc']).intersection(attrset)) != 0:
+    poolIdentifiers = ['conc_init','n_init','n','conc', 'conc_rate', 'n_rate']
+    varIdentifiers = [ node ]
+    reacIdentifiers = [ 'kf', 'kb', 'rate_of_reac']
+    enzymeIdentifier = [ 'km', 'enzyme', 'kcat']
+
+    if len(set(poolIdentifiers).intersection(attrset)) != 0:
         if 'constant' in attrset:
             return BufPool(node, attribs)
         else:
             return Pool(node, attribs)
-    if len(set(['%s'%node]).intersection(attrset)) != 0:
+    if len(set(varIdentifiers).intersection(attrset)) != 0:
         return Variable(node, attribs)
-    elif len(set(['kf', 'kb', 'rate_of_reac']).intersection(attrset)) != 0:
+    elif len(set(reacIdentifiers).intersection(attrset)) != 0:
         return Reaction(node, attribs)
-    elif len(set(['enzyme', 'km', 'kcat']).intersection(attrset)) != 0:
+    elif len(set(enzymeIdentifier).intersection(attrset)) != 0:
         return EnzymaticReaction(node, attribs)
     else:
-        pu.fatal("Couldn't determine the type of node: %s" % node)
-
+        pu.warn("Couldn't determine the type of node: %s" % node)
+        pu.info( [ "Following sets are used to indenfy types of nodes" 
+            , "Pools : %s" % (",".join(poolIdentifiers))
+            , "Variables: %s" % (",".join(varIdentifiers))
+            , "Reaction: %s" % (",".join(reacIdentifiers)) ]
+            )
