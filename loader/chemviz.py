@@ -572,20 +572,21 @@ class DotModel():
         ## FIXME: issue #32 on moose-core. Function must not be created under
         ## stoich.path.
         func = moose.Function("%s/func_%s" % (moose_pool.path, field))
-        func.mode = 0
 
         ## FIXME: This is safe but does not work with stochastic solver.
         #func = moose.Function("%s/fun_%s_%s" % (self.funcPath, moose_pool.name, field))
         self.add_expr_to_function(expression, func, field = field, constants = attribs)
 
-        source = 'valueOut'
+        outfield = 'set' + field[0].upper()+field[1:]
         if not typeObj.rate:
-            outfield = 'set' + field[0].upper()+field[1:]
+            func.mode = 1
+            source = 'valueOut'
         else:
-            outfield = 'increment'
+            func.mode = 3
+            source = 'rateOut'
         logger_.debug("|WRITE| %s.%s --> %s.%s" % (func.path
             , source, moose_pool.path, outfield))
-        moose.connect(func, 'valueOut', moose_pool, outfield)
+        moose.connect(func, source,  moose_pool, outfield)
 
     def add_test(self, molecule):
         """To enable a  test, we need to attach a recorder """
