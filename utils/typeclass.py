@@ -30,32 +30,45 @@ class Pool(object):
         self.assign(attribs)
 
     def assign(self, attribs):
+
+        # Do the initialization.
         if 'conc_init' in attribs:
             self.concInit = float(attribs['conc_init'])
-        elif 'n_init' in attribs:
+        elif 'N_init' in attribs:
             self.concOrN = 'n'
-            self.nInit = int(attribs['n_init'])
+            self.nInit = int(attribs['N_init'])
         else:
             pass
-        if 'n_rate' in attribs:
+
+        # Get the rate. If rates are not specified then get the conc or n
+        # expression.
+        if 'N_rate' in attribs:
             self.concOrN = 'n'
-            self.n = attribs['n_rate']
+            self.n = attribs['N_rate']
             self.rate = True
+            return None
         elif 'conc_rate' in attribs:
             self.concOrN = 'conc'
             self.conc = attribs['conc_rate']
             self.rate = True
-        else: 
-            if 'conc' in attribs:
-                self.conc = str(attribs['conc'])
-            elif 'n' in attribs:
-                self.n = attribs['n']
-                self.concOrN = 'n'
-            else:
-                pu.warn(["Expecting one of the following"
-                , "conc, n, conc_init, n_init, conc_rate, n_rate" 
-                , "Got %s" % (",".join(attribs.keys()))
-                ])
+            return None
+        else:
+            pass
+
+        if 'conc' in attribs:
+            self.conc = str(attribs['conc'])
+            self.concOrN = 'conc'
+            return
+        elif 'N' in attribs:
+            self.n = attribs['N']
+            self.concOrN = 'n'
+            return
+        # if we reach here then expected paramter is not found on the node. Warn
+        # the user and continue.
+        pu.warn(["Expecting one of the following"
+        , "conc, N, conc_rate, N_rate" 
+        , "Got: %s" % (", ".join(attribs.keys()))
+        ])
 
 class BufPool(Pool):
     """docstring for BufPool"""
@@ -120,7 +133,7 @@ def determine_type(node, graph):
     """Determine the type of node """
     attribs = graph.node[node]
     attrset = set(attribs)
-    poolIdentifiers = ['conc_init','n_init','n','conc', 'conc_rate', 'n_rate']
+    poolIdentifiers = ['conc_init','N_init','N','conc', 'conc_rate', 'N_rate']
     varIdentifiers = [ node ]
     reacIdentifiers = [ 'kf', 'kb', 'rate_of_reac']
     enzymeIdentifier = [ 'km', 'enzyme', 'kcat']

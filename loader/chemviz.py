@@ -155,10 +155,11 @@ class DotModel():
                 try:
                     import pygraphviz 
                     self.G = nx.from_agraph(pygraphviz.AGraph(file=dotFile.name))
-                except:
+                except Exception as e:
+                    pu.info("Failed with exception: %s" % e)
                     pu.fatal(["Failed to load graphviz file"
-                        , "Tried pydot and pygraphviz"
-                        ])
+                        , "Tried pydot and pygraphviz" ]
+                        )
 
         self.G = nx.MultiDiGraph(self.G)
         assert self.G.number_of_nodes() > 0, "Zero molecules"
@@ -370,7 +371,7 @@ class DotModel():
         for k in sorted(transDict.keys()):
             elem = transDict[k]
             if isinstance(elem, moose.Pool) or isinstance(elem, moose.BufPool):
-                f = 'getConc'
+                f = 'get' + field[0].upper() + field[1:]
             elif isinstance(elem, moose.Function):
                 f = 'getValue'
             else:
@@ -575,7 +576,9 @@ class DotModel():
 
         ## FIXME: This is safe but does not work with stochastic solver.
         #func = moose.Function("%s/fun_%s_%s" % (self.funcPath, moose_pool.name, field))
-        self.add_expr_to_function(expression, func, field = field, constants = attribs)
+        self.add_expr_to_function(expression, func
+                , field = field
+                , constants = attribs)
 
         outfield = 'set' + field[0].upper()+field[1:]
         if not typeObj.rate:
