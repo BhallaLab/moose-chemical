@@ -36,7 +36,7 @@ class Pool(object):
             self.concInit = float(attribs['conc_init'])
         elif 'N_init' in attribs:
             self.concOrN = 'n'
-            self.nInit = int(attribs['N_init'])
+            self.nInit = float(attribs['N_init'])
         else:
             pass
 
@@ -63,12 +63,6 @@ class Pool(object):
             self.n = attribs['N']
             self.concOrN = 'n'
             return
-        # if we reach here then expected paramter is not found on the node. Warn
-        # the user and continue.
-        pu.warn(["Expecting one of the following"
-        , "conc, N, conc_rate, N_rate" 
-        , "Got: %s" % (", ".join(attribs.keys()))
-        ])
 
 class BufPool(Pool):
     """docstring for BufPool"""

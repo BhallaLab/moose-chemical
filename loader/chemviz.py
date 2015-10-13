@@ -46,7 +46,7 @@ def yacml_to_dot(text):
     return text
 
 def to_bool(arg):
-    if arg.lower() in [ "0", "f", "false", "no", "n" ]:
+    if arg.lower() in [ "0", "false", "no" ]:
         return False
     return True
 
@@ -247,9 +247,9 @@ class DotModel():
         if  attr.get('conc_init', False):
             p.concInit = float(attr['conc_init'])
             logger_.debug("|| set Conc_init to %s" % p.concInit)
-        elif attr.get('n_init', False):
-            p.nInit = int(attr['n_init'])
-            logger_.debug("|| set n_init to %s" % p.nInit)
+        elif attr.get('N_init', False):
+            p.nInit = float(attr['N_init'])
+            logger_.debug("|| Set N_init to %s" % p.nInit)
         else:
             pass
 
@@ -501,8 +501,7 @@ class DotModel():
         mooseFunc = self.variables[variable]
         assert mooseFunc
         attribs = self.G.node[variable]
-        plot = to_bool(attribs.get('plot', 'false'))
-        if plot:
+        if attribs.get('plot', None): 
             self.add_recorder(mooseFunc, 'value')
         funcExpr = attribs.get(variable, attribs.get('%s' % variable))
         assert funcExpr, "No expression {0}".format(variable)
@@ -514,13 +513,17 @@ class DotModel():
         """
         moose_pool = self.molecules[pool]
         attribs = self.G.node[pool]
-        plot = to_bool(attribs.get('plot', 'false'))
         pool = attribs['type']
         if pool.concOrN in ['conc', 'n']:
             self.add_pool_expression(moose_pool, attribs)
-            if plot:
+            if attribs.get('plot', None):
                 assert moose_pool, "moose_pool shouldn't be NULL"
-                self.add_recorder(moose_pool, pool.concOrN)
+                if attribs['plot'] in [ 'conc', 'N' ]:
+                    self.add_recorder(moose_pool, attribs['plot'])
+                else:
+                    logger_.warn("Supported conc/N, not %s." % attribs['plot'])
+                    logger_.info("Using default on pool")
+                    self.add_recorder(moose_pool, pool.concOrN)
         else:
             pu.fatal("Neither conc or n expression on pool %s" % pool)
 
@@ -570,6 +573,7 @@ class DotModel():
             source = 'rateOut'
         logger_.debug("|WRITE| %s.%s --> %s.%s" % (func.path
             , source, moose_pool.path, outfield))
+        logger_.debug("||| Func mode is: %s" % func.mode)
         moose.connect(func, source,  moose_pool, outfield)
 
     def add_test(self, molecule):
@@ -591,7 +595,7 @@ class DotModel():
         moose.Neutral('/tables')
         tablePath = '/tables/%s_%s' % (elem, field)
         tab = moose.Table2(tablePath)
-        tab.connect('requestOut', moose_elem, 'get' + field[0].upper() + field[1:])
+        moose.connect(tab, 'requestOut', moose_elem, 'get' + field[0].upper() + field[1:])
         self.tables["%s.%s" % (elem, field)] = tab
         try:
             self.G.node[elem]['%s_table' % field] = tab
