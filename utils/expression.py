@@ -15,5 +15,5 @@ __status__           = "Development"
 import re
 
 def get_ids(expr):
-    ids = re.findall(r'(?P<id>[_a-zA-Z]\w+)', expr)
+    ids = re.findall(r'(?P<id>[_a-zA-Z]\w*)', expr)
     return ids

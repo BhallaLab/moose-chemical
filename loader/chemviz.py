@@ -219,27 +219,6 @@ class DotModel():
         logger_.debug("Writing network to : %s" % outfile)
         nx.write_dot(self.G, outfile)
 
-    def flatten_expression(self, pool):
-        attribs = self.G.node[pool]
-        poolType = attribs['type']
-        fieldType = poolType.concOrN
-        if not attribs.get(fieldType, False):
-            return ''
-        poolExpr = attribs[fieldType]
-        logger_.debug("Flatting expression: %s" % poolExpr)
-        ids = _expr.get_ids(poolExpr)
-        print "ids", ids
-        if not ids:
-            return poolExpr
-        for i in ids:
-            if i not in self.molecules:
-                continue
-            else:
-                continue
-                #poolExpr.replace(i, self.flatten_expression(i))
-        return poolExpr
-
-
     def find_node(self, node_name):
         for n in self.G.nodes():
             if n == node_name:
@@ -295,7 +274,7 @@ class DotModel():
         if len(consts) == 0:
             return expr
         elif len(const_dict) == 0:
-            mu.warn("These consts were not found in reaction: %s" % consts)
+            logger_.warn("These consts were not found in reaction: %s" % consts)
             return expr
 
         for c in sorted(consts, key=lambda x: len(x)):
@@ -304,7 +283,8 @@ class DotModel():
             if c in const_dict:
                 expr = replace_in_expr(c, const_dict[c], expr)
             else:
-                pass
+                logger_.debug("Constant %s not found in const" % c)
+                continue
         return expr
 
     def replace_possible_subexpr(self, expr, constants, ids):
@@ -326,6 +306,7 @@ class DotModel():
         """
         # Get the replaceable identifier in given expression.
         ids = _expr.get_ids(expr)
+        logger_.debug("IDs: %s" % ",".join(ids))
 
         # Find a subexpression, insert into expression. If expression changes,
         # call this function again.
@@ -363,7 +344,7 @@ class DotModel():
             transDict[y] = v
 
         expr = self.replace_local_consts(expr, localConstants, constants)
-        logger_.info("Adding expression: %s" % expr)
+        logger_.info("Adding expression after replacement: %s" % expr)
         func.expr = expr
 
         # After replacing variables with appropriate yi's, connect
