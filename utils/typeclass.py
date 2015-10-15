@@ -133,8 +133,23 @@ def determine_type(node, graph):
     enzymeIdentifier = [ 'km', 'enzyme', 'kcat']
 
     if len(set(poolIdentifiers).intersection(attrset)) != 0:
-        if 'constant' in attrset:
+        # It is also possible that there is a non-float expression on pool. If
+        # concentration of N is computed by a function then it should be
+        # bufPool. 
+        if len(set(['constant', 'conc_rate', 'N_rate']).intersection(attrset)) != 0:
             return BufPool(node, attribs)
+        elif attribs.get('conc', None):
+            try:
+                c = float(attribs['conc'])
+                return Pool(node, attribs)
+            except Exception as e:
+                return BufPool(node, attribs)
+        elif attribs.get('N', None):
+            try:
+                float(attribs['N'])
+                return Pool(node, attribs)
+            except Exception as e:
+                return BufPool(node, attribs)
         else:
             return Pool(node, attribs)
     if len(set(varIdentifiers).intersection(attrset)) != 0:

@@ -562,7 +562,12 @@ class DotModel():
         #func = moose.Function("%s/fun_%s_%s" % (self.funcPath, moose_pool.name, field))
         self.add_expr_to_function(expression, func
                 , field = field
-                , constants = attribs)
+                , constants = attribs
+                )
+
+        # FIXME: issue #3
+        #moose_pool = moose.BufPool(moose_pool)
+        #self.molecules[moose_pool.name] = moose_pool
 
         outfield = 'set' + field[0].upper()+field[1:]
         if not typeObj.rate:
@@ -571,8 +576,9 @@ class DotModel():
         else:
             func.mode = 3
             source = 'rateOut'
-        logger_.debug("|WRITE| %s.%s --> %s.%s" % (func.path
-            , source, moose_pool.path, outfield))
+        logger_.debug("|WRITE| %s.%s --> %s.%s" % (func.path, source
+            , moose_pool.path, outfield)
+            )
         logger_.debug("||| Func mode is: %s" % func.mode)
         moose.connect(func, source,  moose_pool, outfield)
 
