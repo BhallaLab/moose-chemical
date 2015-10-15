@@ -13,7 +13,24 @@ __email__            = "dilawars@ncbs.res.in"
 __status__           = "Development"
 
 import re
+import py_expression_eval as pee
+
+parser = pee.Parser()
 
 def get_ids(expr):
     ids = re.findall(r'(?P<id>[_a-zA-Z]\w*)', expr)
     return ids
+
+
+def replace_possible_subexpr(expr, constants, ids):
+    """ If a id value can be converted to float, its a constant. Else its a
+    subexpression
+    """
+    for i in ids:
+        if i in constants:
+            try: 
+                v = float(constants[i])
+            except:
+                expr = expr.replace(i, constants[i])
+    return expr
+

@@ -310,7 +310,7 @@ class DotModel():
 
         # Find a subexpression, insert into expression. If expression changes,
         # call this function again.
-        new_expr = self.replace_possible_subexpr(expr, constants, ids)
+        new_expr = _expr.replace_possible_subexpr(expr, constants, ids)
         if new_expr != expr:
             # and serach of ids again.
             return self.add_expr_to_function(new_expr, func, constants, field)
@@ -537,8 +537,8 @@ class DotModel():
             expression = typeObj.conc
             try: 
                 moose_pool.concInit = float(expression)
-                logger_.debug("| Assigned conc=%s to pool %s" % (moose_pool.conc, moose_pool))
                 moose_pool.conc = float(expression)
+                logger_.debug("| Assigned conc=%s to pool %s" % (moose_pool.conc, moose_pool))
                 return moose_pool
             except:
                 pass

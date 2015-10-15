@@ -15,6 +15,7 @@ __status__           = "Development"
 
 import networkx as nx
 import moose.print_utils as pu
+import utils.expression as exp_
 
 class Pool(object):
     """Pool"""
@@ -56,13 +57,11 @@ class Pool(object):
             pass
 
         if 'conc' in attribs:
-            self.conc = str(attribs['conc'])
+            self.conc = attribs.get('reduced_expr', str(attribs['conc']))
             self.concOrN = 'conc'
-            return
         elif 'N' in attribs:
-            self.n = attribs['N']
+            self.n = attribs.get('reduced_expr', attribs['N'])
             self.concOrN = 'n'
-            return
 
 class BufPool(Pool):
     """docstring for BufPool"""
@@ -132,23 +131,38 @@ def determine_type(node, graph):
     reacIdentifiers = [ 'kf', 'kb', 'rate_of_reac']
     enzymeIdentifier = [ 'km', 'enzyme', 'kcat']
 
+    expr = attribs.get('conc', attribs.get('N', ''))
+
+    reducedExpr = exp_.replace_possible_subexpr(expr, attribs, exp_.get_ids(expr))
+
+    # Not all reducedExpr can be parsed using py_expression_eval module. Test on
+    # reducedExpr and parseExp both.
+    parseExp = None
+    try:
+        parseExp = exp_.parser.parse(reducedExpr)
+        attibs['reduced_expr'] = parseExp.toString()
+        attibs['parsed_expr_obj'] = parseExp
+    except Exception as e:
+        pass
+
     if len(set(poolIdentifiers).intersection(attrset)) != 0:
         # It is also possible that there is a non-float expression on pool. If
         # concentration of N is computed by a function then it should be
         # bufPool. 
+        
+        # In this case, either it's a bufpool (constant = true), or funcion is
+        # required to update its concentration because of rate expression.
         if len(set(['constant', 'conc_rate', 'N_rate']).intersection(attrset)) != 0:
             return BufPool(node, attribs)
-        elif attribs.get('conc', None):
+        # Either its a pool or bufpool. If expression can be evaluated after
+        # reducing it then its a Pool else BufPool.
+        elif reducedExpr:
             try:
-                c = float(attribs['conc'])
+                v = parseExp.evaluate({})
+                attribs['reduced_expr'] = str(v)
                 return Pool(node, attribs)
             except Exception as e:
-                return BufPool(node, attribs)
-        elif attribs.get('N', None):
-            try:
-                float(attribs['N'])
-                return Pool(node, attribs)
-            except Exception as e:
+                attribs['reduced_expr'] = reducedExpr
                 return BufPool(node, attribs)
         else:
             return Pool(node, attribs)
