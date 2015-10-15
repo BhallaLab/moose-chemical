@@ -1,0 +1,14 @@
+-- Here goes the grammar.
+
+comment "#" ;
+comment "//" ;
+comment "/*" "*/" ;
+
+entrypoints Compartment;
+
+Compartment. Compartment ::=  ComptName "{" [ ComptStmt ] "}" ;
+
+ComptStmt. ComptStmt ::=  GraphStmt | NodeStmt | EdgeStmt ;
+
+GraphStmt. GraphStmt ::=  Key "=" Value ;
+NodeStmt.  NodeStmt ::= NodeName "[" 
