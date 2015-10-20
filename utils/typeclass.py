@@ -56,9 +56,11 @@ class Pool(object):
         else:
             pass
 
+        exprObj = attribs['expr_obj']
         if 'conc' in attribs:
-            self.conc = attribs.get('reduced_expr', str(attribs['conc']))
             self.concOrN = 'conc'
+            self.conc = exprObj.expr_val
+            #self.conc = attribs.get('reduced_expr', attribs['conc'])
         elif 'N' in attribs:
             self.n = attribs.get('reduced_expr', attribs['N'])
             self.concOrN = 'n'
@@ -121,6 +123,29 @@ class EnzymaticReaction(Reaction):
         self.enzyme = attribs['enzyme']
         self.attribs = attribs
 
+class ReducedExpr():
+    def __init__(self, expr):
+        self.expr = expr
+        self.parsed_expr = None
+        self.expr_val = expr
+        self.val_type = "string"
+        self.init()
+
+    def __str__(self):
+        return "%s" % self.expr_val
+
+    def init(self):
+        try:
+            self.parsed_expr = exp_.parser.parse(self.expr)
+        except:
+            self.parsed_expr = None 
+        if self.parsed_expr:
+            try:
+                self.expr_val = self.parsed_expr.evaluate({})
+                self.val_type = "decimal"
+            except Exception as e:
+                self.expr_val = self.parsed_expr.toString()
+                self.val_type = "string"
 
 def determine_type(node, graph):
     """Determine the type of node """
@@ -133,41 +158,24 @@ def determine_type(node, graph):
 
     expr = attribs.get('conc', attribs.get('N', ''))
 
-    reducedExpr = exp_.replace_possible_subexpr(expr, attribs, exp_.get_ids(expr))
-
-    # Not all reducedExpr can be parsed using py_expression_eval module. Test on
-    # reducedExpr and parseExp both.
-    parseExp = None
-    try:
-        parseExp = exp_.parser.parse(reducedExpr)
-        attibs['reduced_expr'] = parseExp.toString()
-        attibs['parsed_expr_obj'] = parseExp
-    except Exception as e:
-        pass
+    if expr:
+        reducedExpr = exp_.replace_possible_subexpr(expr, attribs, exp_.get_ids(expr))
+        exprObj = ReducedExpr(reducedExpr)
+        attribs['expr_obj'] = exprObj
+    else:
+        attribs['expr_obj'] = None
 
     if len(set(poolIdentifiers).intersection(attrset)) != 0:
-        # It is also possible that there is a non-float expression on pool. If
-        # concentration of N is computed by a function then it should be
-        # bufPool. 
-        
-        # In this case, either it's a bufpool (constant = true), or funcion is
-        # required to update its concentration because of rate expression.
         if len(set(['constant']).intersection(attrset)) != 0:
-            attribs['reduced_expr'] = reducedExpr
+            attribs['reduced_expr'] = exprObj.expr_val
             return BufPool(node, attribs)
-        ### Either its a pool or bufpool. If expression can be evaluated after
-        ### reducing it then its a Pool else BufPool.
         elif reducedExpr:
-            try:
-                v = parseExp.evaluate({})
-                attribs['reduced_expr'] = str(v)
-                return Pool(node, attribs)
-            except Exception as e:
-                attribs['reduced_expr'] = reducedExpr
-                return BufPool(node, attribs)
+            attribs['reduced_expr'] = exprObj.expr_val
+            return Pool(node, attribs)
         else:
-            attribs['reduced_expr'] = reducedExpr
-            return BufPool(node, attribs)
+            attribs['reduced_expr'] = exprObj.expr_val
+            return Pool(node, attribs)
+
     if len(set(varIdentifiers).intersection(attrset)) != 0:
         return Variable(node, attribs)
     elif len(set(reacIdentifiers).intersection(attrset)) != 0:
