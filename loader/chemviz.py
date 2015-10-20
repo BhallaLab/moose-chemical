@@ -401,6 +401,7 @@ class DotModel():
     def add_reaction(self, node, compt):
         """Add a reaction node to MOOSE"""
         attr = self.G.node[node]
+        attr['shape'] = 'rect'
         logger_.info("| Adding a reaction: %s" % node)
         logger_.debug("|| With attribs %s:" % attr)
         reac = moose.Reac('%s/%s' % (compt.path, node))
@@ -597,7 +598,7 @@ class DotModel():
         # Add a table to element. 
         # TODO: Each molecule can have more than one table? 
         elem = moose_elem.name
-        logger_.info("Adding a Table on : %s.%s" % (elem, field))
+        logger_.info("| Adding a Table on : %s.%s" % (elem, field))
         moose.Neutral('/tables')
         tablePath = '/tables/%s_%s' % (elem, field)
         tab = moose.Table2(tablePath)

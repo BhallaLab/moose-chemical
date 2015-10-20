@@ -152,10 +152,11 @@ def determine_type(node, graph):
         
         # In this case, either it's a bufpool (constant = true), or funcion is
         # required to update its concentration because of rate expression.
-        if len(set(['constant', 'conc_rate', 'N_rate']).intersection(attrset)) != 0:
+        if len(set(['constant']).intersection(attrset)) != 0:
+            attribs['reduced_expr'] = reducedExpr
             return BufPool(node, attribs)
-        # Either its a pool or bufpool. If expression can be evaluated after
-        # reducing it then its a Pool else BufPool.
+        ### Either its a pool or bufpool. If expression can be evaluated after
+        ### reducing it then its a Pool else BufPool.
         elif reducedExpr:
             try:
                 v = parseExp.evaluate({})
@@ -165,7 +166,8 @@ def determine_type(node, graph):
                 attribs['reduced_expr'] = reducedExpr
                 return BufPool(node, attribs)
         else:
-            return Pool(node, attribs)
+            attribs['reduced_expr'] = reducedExpr
+            return BufPool(node, attribs)
     if len(set(varIdentifiers).intersection(attrset)) != 0:
         return Variable(node, attribs)
     elif len(set(reacIdentifiers).intersection(attrset)) != 0:

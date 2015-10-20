@@ -404,12 +404,12 @@ class Parser:
         self.tmpprio = 0
 
         self.ops1 = {
-            'sin': math.sin,
-            'cos': math.cos,
-            'tan': math.tan,
-            'asin': math.asin,
-            'acos': math.acos,
-            'atan': math.atan,
+            'sin': lambda x : math.sin(math.radians(x)),
+            'cos': lambda x : math.cos(math.radians(x)),
+            'tan': lambda x: math.tan(math.radians(x)),
+            'asin': lambda x: math.asin(math.radians(x)),
+            'acos': lambda x: math.acos(math.radians(x)),
+            'atan': lambda x: math.atan(math.radians(x)),
             'sqrt': math.sqrt,
             'log': math.log,
             'abs': abs,

@@ -31,3 +31,8 @@ logging.basicConfig(level=logging.DEBUG,
     datefmt='%m-%d %H:%M',
     filemode='w'
     )
+
+pool_shape_ = 'ellipse'
+bufpool_shape_ = 'egg'
+reaction_shape_ = 'rect'
+enzyme_reac_shape_ =  'egg'
