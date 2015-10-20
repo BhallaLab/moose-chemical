@@ -15,7 +15,7 @@ __status__           = "Development"
 
 import networkx as nx
 import moose.print_utils as pu
-import utils.expression as exp_
+from .  import expression as exp_
 
 class Pool(object):
     """Pool"""
