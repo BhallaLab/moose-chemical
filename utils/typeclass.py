@@ -169,12 +169,17 @@ def determine_type(node, graph):
         if len(set(['constant']).intersection(attrset)) != 0:
             attribs['reduced_expr'] = exprObj.expr_val
             return BufPool(node, attribs)
-        elif reducedExpr:
+        elif exprObj:
             attribs['reduced_expr'] = exprObj.expr_val
-            return Pool(node, attribs)
+            if exprObj.val_type == "decimal":
+                return Pool(node, attribs)
+            elif exprObj.val_type == "string":
+                return BufPool(node, attribs)
+            else:
+                raise Exception("Invalid value type %s" % exprObj.val_type)
         else:
             attribs['reduced_expr'] = exprObj.expr_val
-            return Pool(node, attribs)
+            return BufPool(node, attribs)
 
     if len(set(varIdentifiers).intersection(attrset)) != 0:
         return Variable(node, attribs)
