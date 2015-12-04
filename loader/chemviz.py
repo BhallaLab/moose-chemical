@@ -36,7 +36,7 @@ logger_.setLevel(logging.DEBUG)
 
 def yacml_to_dot(text):
     """yacml_to_dot
-    Convert YACML test to a dot.
+    Convert YACML to a legal dot.
 
     :param text: Text of YACML model.
     """
@@ -285,18 +285,6 @@ class DotModel():
                 continue
         return expr
 
-    def replace_possible_subexpr(self, expr, constants, ids):
-        """ If a id value can be converted to float, its a constant. Else its a
-        subexpression
-        """
-        for i in ids:
-            if i in constants:
-                try: 
-                    v = float(constants[i])
-                except:
-                    expr = expr.replace(i, constants[i])
-        return expr
-
     def add_expr_to_function(self, expr, func, constants = {}, field = 'conc'):
         """Reformat a given expression and attach it to given function.
 
@@ -343,6 +331,8 @@ class DotModel():
 
         expr = self.replace_local_consts(expr, localConstants, constants)
         logger_.info("Adding expression after replacement: %s" % expr)
+        # No embedded quotation in expression.
+        expr = expr.replace('"', '')
         func.expr = expr
 
         # After replacing variables with appropriate yi's, connect
