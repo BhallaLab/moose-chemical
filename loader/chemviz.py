@@ -20,15 +20,15 @@ import moose.print_utils as pu
 import moose.utils as mu
 import ast
 import re
-from ..utils import test_expr as te
-from ..utils import expression as _expr
+from utils import test_expr as te
+from utils import expression as _expr
 import operator as ops
 import sys
 from collections import defaultdict
 import reaction
 import tempfile
 import matplotlib.pyplot as plt
-from ..utils import typeclass as tc
+from utils import typeclass as tc
 import logging
 
 logger_ = logging.getLogger('chemviz')
