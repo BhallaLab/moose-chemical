@@ -31,6 +31,9 @@ def replace_possible_subexpr(expr, constants, ids):
             try: 
                 v = float(constants[i])
             except:
-                expr = expr.replace(i, constants[i])
+                # NOTE: sometimes a constant may be quoted. We don't want to
+                # have one more quotation inside quote.
+                replaceWith = constants[i].replace('"', '')
+                expr = expr.replace(i, replaceWith)
     return expr
 
