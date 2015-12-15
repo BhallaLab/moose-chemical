@@ -59,6 +59,7 @@ def replace_in_expr(frm, to, expr):
     # protect these substrings.
     for i, p in enumerate(idents):
         expr = expr.replace(p, "##%s##" % i)
+    expr = expr.replace('"', '')
 
     # Now replace the given frm -> to
     expr = expr.replace(frm, to)
@@ -343,7 +344,7 @@ class DotModel():
 
         expr = self.replace_local_consts(expr, localConstants, constants)
         logger_.info("Adding expression after replacement: %s" % expr)
-        func.expr = expr
+        func.expr = expr.replace('"', '')
 
         # After replacing variables with appropriate yi's, connect
         # them to appropriate MOOSE elements.: GO in ordered sequences.
