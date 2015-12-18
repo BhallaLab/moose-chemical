@@ -3,8 +3,8 @@ compartment compt {
     volume=1.0;
 
     // Here are the pools.
-    a [ conc_init = 1, plot=true];
-    b [ conc_init = 0, plot=true, test="conc AE 1.0;AH;10.0 10.1"];
+    a [ conc = 1, plot=true];
+    b [ conc = 0, plot=true, test="conc AE 1.0;AH;10.0 10.1"];
 
     // here are the reactions.
     r1 [ kf = 2.0, kb = 1.0 ];

@@ -158,6 +158,7 @@ def determine_type(node, graph):
 
     expr = attribs.get('conc', attribs.get('N', ''))
 
+    exprObj = None
     if expr:
         reducedExpr = exp_.replace_possible_subexpr(expr, attribs, exp_.get_ids(expr))
         exprObj = ReducedExpr(reducedExpr)
@@ -169,7 +170,7 @@ def determine_type(node, graph):
         if len(set(['constant']).intersection(attrset)) != 0:
             attribs['reduced_expr'] = exprObj.expr_val
             return BufPool(node, attribs)
-        elif exprObj:
+        elif exprObj is not None:
             attribs['reduced_expr'] = exprObj.expr_val
             if exprObj.val_type == "decimal":
                 return Pool(node, attribs)
