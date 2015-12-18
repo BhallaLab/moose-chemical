@@ -544,7 +544,8 @@ class DotModel():
         logger_.info("Adding expr %s to moose_pool %s" % (expression, moose_pool))
         ## FIXME: issue #32 on moose-core. Function must not be created under
         ## stoich.path.
-        func = moose.Function("%s/func_%s" % (moose_pool.path, field))
+        moose.Neutral("%s/%s" % ( moose_pool.path, field ))
+        func = moose.Function("%s/%s/func" % (moose_pool.path, field))
 
         ## FIXME: This is safe but does not work with stochastic solver.
         #func = moose.Function("%s/fun_%s_%s" % (self.funcPath, moose_pool.name, field))
