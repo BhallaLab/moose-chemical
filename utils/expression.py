@@ -13,7 +13,7 @@ __email__            = "dilawars@ncbs.res.in"
 __status__           = "Development"
 
 import re
-import py_expression_eval as pee
+from .. import py_expression_eval as  pee
 
 parser = pee.Parser()
 
