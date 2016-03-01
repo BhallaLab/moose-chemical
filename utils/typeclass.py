@@ -92,7 +92,9 @@ class Reaction(object):
         super(Reaction, self).__init__()
         self.name = name
         self.kf = attribs.get('kf', 0)
+        self.numKf = attribs.get('numKf', 0)
         self.kb = attribs.get('kb', 0)
+        self.numKb = attribs.get('numKb', 0)
         self.rate = attribs.get('rate_of_reac')
 
 class Variable(object):
@@ -153,7 +155,7 @@ def determine_type(node, graph):
     attrset = set(attribs)
     poolIdentifiers = ['conc_init','N_init','N','conc', 'conc_rate', 'N_rate']
     varIdentifiers = [ node ]
-    reacIdentifiers = [ 'kf', 'kb', 'rate_of_reac']
+    reacIdentifiers = [ 'kf', 'kb', 'numKf', 'numKb', 'rate_of_reac']
     enzymeIdentifier = [ 'km', 'enzyme', 'kcat']
 
     expr = attribs.get('conc', attribs.get('N', ''))

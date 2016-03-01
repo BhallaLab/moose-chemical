@@ -22,6 +22,7 @@ import ast
 import re
 from ..utils import test_expr as te
 from ..utils import expression as _expr
+from .. import warnings as warn
 import operator as ops
 import sys
 from collections import defaultdict
@@ -281,19 +282,23 @@ class DotModel():
                 continue
             if c in const_dict:
                 expr = replace_in_expr(c, const_dict[c], expr)
+            elif c in self.G.graph['graph']:
+                expr = replace_in_expr(c, self.G.graph['graph'][c], expr)
             else:
+                # Search in graph globals
                 logger_.debug("Constant %s not found in const" % c)
                 continue
         return expr
 
-    def add_expr_to_function(self, expr, func, constants = {}, field = 'conc'):
+    def add_expr_to_function(self, expr, func, constants = {}, field = 'n'):
         """Reformat a given expression and attach it to given function.
 
         Also connect x0, x1 etc to molecules or variables.
         """
+
         # Get the replaceable identifier in given expression.
         ids = _expr.get_ids(expr)
-        logger_.debug("IDs: %s" % ",".join(ids))
+        logger_.debug("[FUNC| IDs: %s" % ",".join(ids))
 
         # Find a subexpression, insert into expression. If expression changes,
         # call this function again.
@@ -336,54 +341,64 @@ class DotModel():
 
         # After replacing variables with appropriate xi's, connect
         # them to appropriate MOOSE elements.: GO in ordered sequences.
-        for k in sorted(transDict.keys()):
+        func.x.num = len(transDict)
+        for i, k in enumerate(sorted(transDict.keys())):
             elem = transDict[k]
             if isinstance(elem, moose.Pool) or isinstance(elem, moose.BufPool):
-                f = 'get' + field[0].upper() + field[1:]
+                f = field + 'Out'
             elif isinstance(elem, moose.Function):
-                f = 'getValue'
+                f = 'valueOut'
             else:
                 raise UserWarning("Can't find the type of source elem %" % elem)
             logger_.debug("|READ| %s.%s <-- %s.%s" % (func.path, k, transDict[k].path, f))
-            moose.connect(func, 'input', transDict[k], f)
+            try:
+                moose.connect(transDict[k], f, func.x[i], 'input')
+            except NameError as e:
+                print(warn.issue_72( ))
+                quit()
 
 
-    def add_forward_rate_expr(self, reac, expr, constants):
-        """Add an expression for forward rate constant"""
-        logger_.debug("| Forward rate expression: %s" % expr)
-        # FIXME: If any function is created under ksolve.path, then it causes
-        # seg fault. Reported on github=moose-core.
-        #funcPath = '%s/%s_forward_expr_f' % (self.funcPath, reac.name)
-        funcPath = '%s/%s_forward_expr_f' % (reac.path, reac.name)
-        forwardExprFunc = moose.Function(funcPath)
-        self.add_expr_to_function(expr, forwardExprFunc, constants=constants)
-        forwardExprFunc.mode = 1
-        logger_.debug("||WRITE| %s --> %s.%s" % (forwardExprFunc, reac, 'setKf'))
-        moose.connect(forwardExprFunc, 'valueOut', reac, 'setKf') 
-
-    def add_backward_rate_expr(self, reac, expr, constants):
-        """Add an expression for backward rate constant
-        """
-        logger_.debug("| Backward rate expression: %s" % expr)
-        funcPath = '%s/backward_expr_f' % reac.path
-        backwardFunction = moose.Function(funcPath)
-        self.add_expr_to_function(expr, backwardFunction, constants=constants)
-        logger_.debug("||WRITE| %s --> %s.%s" % (backwardFunction, reac, 'setKb'))
-        moose.connect(backwardFunction, 'valueOut', reac, 'setKb') 
+    def add_rate_expr(self, reac, field, expr, constants):
+        """Add an expression for forward/backward rate"""
+        logger_.debug("|=  Rate expression for %s is %s" % (field, expr))
+        # If expr can be converted to float, simply set the expression to float.
+        # Otherwise, compute the value using moose.Function and set the value.
+        # NOTE: When using function, one needs to use numKf/numKb instead of
+        # Kf/Kb.
+        try:
+            reac.setField( field, float(expr) )
+            return True
+        except ValueError as e:
+            funcPath = '%s/%s_forward_expr_f' % (reac.path, reac.name)
+            forwardExprFunc = moose.Function(funcPath)
+            self.add_expr_to_function(expr, forwardExprFunc, constants=constants)
+            forwardExprFunc.mode = 1
+            # NOTE: setting up Kf is not allowed, one can only set numKf and numKb.
+            # Also one has to be careful about the volume. 
+            setField = 'set' + field[0].upper() + field[1:]
+            logger_.debug("||WRITE| %s --> %s.%s" % (forwardExprFunc, reac, field))
+            moose.connect(forwardExprFunc, 'valueOut', reac, setField) 
+            return True
+        except Exception as e:
+            pu.fatal("Failed to set %s to %s" % (field, expr))
+            sys.exit(-1)
 
     def add_reaction_attr(self, reac, attr):
         """Add attributes to reaction.
         """
-        kf = attr['kf']
-        kb = attr['kb']
-        try:
-            reac.Kf = float(kf)
-        except Exception as e:
-            self.add_forward_rate_expr(reac, kf, constants = attr)
-        try:
-            reac.Kb = float(kb)
-        except Exception as e:
-            self.add_backward_rate_expr(reac, kb, constants = attr)
+        if 'numKf' in attr:
+            self.add_rate_expr( reac, 'numKf', attr['numKf'], attr )
+        elif 'kf' in attr:
+            self.add_rate_expr( reac, 'kf', attr['kf'], attr)
+        else: 
+            pu.warn('Expecting kf of numKf in paramters. Check your reaction!')
+
+        if 'numKb' in attr:
+            self.add_rate_expr( reac, 'numKb', attr['numKb'], attr)
+        elif 'kb' in attr:
+            self.add_rate_expr( reac, 'kb', attr['kb'], attr )
+        else:
+            pu.warn('Expecting kb of numKb in paramters. Check your reaction!')
 
     def add_reaction(self, node, compt):
         """Add a reaction node to MOOSE"""
@@ -449,18 +464,23 @@ class DotModel():
         pu.info("Adding a solver %s to compartment %s" % (solver, compt.path))
         s = None
         if solver == "ksolve":
+            pu.info('[INFO] Using deterministic solver')
             s = moose.Ksolve('%s/ksolve' % compt.path)
         elif solver == 'gsolve':
+            pu.info('Using stochastic solver')
             s = moose.Gsolve('%s/gsolve' % compt.path)
+            pu.info("Setting up useClockedUpdate = True")
+            s.useClockedUpdate = True
         else:
             msg = "Unknown solver: %s. Using ksolve." % solver
             pu.warn(msg)
+            s = moose.Ksolve('%s/ksolve' % compt.path)
 
         stoich = moose.Stoich('%s/stoich' % compt.path)
         # NOTE: must be set before compartment or path.
         assert s
-        stoich.ksolve = s
         stoich.compartment = compt
+        stoich.ksolve = s
         stoich.path = '%s/##' % compt.path
 
     def add_pool(self, molecule, compt):
@@ -513,11 +533,10 @@ class DotModel():
                     logger_.info("Using default on pool")
                     self.add_recorder(moose_pool, pool.concOrN)
         else:
-            pu.fatal("Neither conc or n expression on pool %s" % pool)
+            pu.fatal("Neither conc or N expression on pool %s" % pool)
 
     def add_pool_expression(self, moose_pool, attribs):
         """generate conc of moose_pool by a time dependent expression"""
-
         typeObj = attribs['type']
         field = typeObj.concOrN
         expression = None
@@ -540,23 +559,13 @@ class DotModel():
             except:
                 pass
 
-        assert expression, "Pool must some expression %s" % attribs
+        assert expression, "Pool must have expression for conc/n in %s" % attribs
         logger_.info("Adding expr %s to moose_pool %s" % (expression, moose_pool))
         ## FIXME: issue #32 on moose-core. Function must not be created under
         ## stoich.path.
         moose.Neutral("%s/%s" % ( moose_pool.path, field ))
         func = moose.Function("%s/%s/func" % (moose_pool.path, field))
-
-        ## FIXME: This is safe but does not work with stochastic solver.
-        #func = moose.Function("%s/fun_%s_%s" % (self.funcPath, moose_pool.name, field))
-        self.add_expr_to_function(expression, func
-                , field = field
-                , constants = attribs
-                )
-
-        # FIXME: issue #3
-        #moose_pool = moose.BufPool(moose_pool)
-        #self.molecules[moose_pool.name] = moose_pool
+        self.add_expr_to_function(expression, func, attribs, field)
 
         outfield = 'set' + field[0].upper()+field[1:]
         if not typeObj.rate:
@@ -565,10 +574,10 @@ class DotModel():
         else:
             func.mode = 3
             source = 'rateOut'
-        logger_.debug("|WRITE| %s.%s --> %s.%s" % (func.path, source
-            , moose_pool.path, outfield)
+        logger_.debug("|FUNC| Func mode is: %s" % func.mode)
+        logger_.debug("|FUNC|WRITE| {0}.{1} --> {2}.{3}".format(
+            func.path, source , moose_pool.path, outfield)
             )
-        logger_.debug("||| Func mode is: %s" % func.mode)
         moose.connect(func, source,  moose_pool, outfield)
 
     def add_test(self, molecule):
@@ -587,8 +596,7 @@ class DotModel():
         # TODO: Each molecule can have more than one table? 
         elem = moose_elem.name
         logger_.info("| Adding a Table on : %s.%s" % (elem, field))
-        moose.Neutral('/tables')
-        tablePath = '/tables/%s_%s' % (elem, field)
+        tablePath = '/%s/table_%s_%s' % (moose_elem.path, elem, field)
         tab = moose.Table2(tablePath)
         moose.connect(tab, 'requestOut', moose_elem, 'get' + field[0].upper() + field[1:])
         self.tables["%s.%s" % (elem, field)] = tab
@@ -611,10 +619,16 @@ class DotModel():
         """
 
         # get dt from chemviz file
-        dt = float(self.G.graph['graph'].get('dt', 0.01))
-        pu.info("Using dt=%s for all chemical process" % dt)
-        for i in range(10, 16):
-            moose.setClock(i, dt)
+        if self.G.graph['graph'].get('solver', 'ksolve') == 'ksolve':
+            dt = float(self.G.graph['graph'].get('dt', 0.01))
+            pu.info("Using dt=%s for all chemical process" % dt)
+            for i in range(10, 16):
+                moose.setClock(i, dt)
+        else:
+            pu.info("Using plot_dt of %s" %
+                    (self.G.graph['graph'].get('plot_dt', 1)))
+            # moose.setClock(18, float(self.G.graph['graph'].get('plot_dt', 1)))
+
         moose.reinit()
 
         if 'sim_time' in self.G.graph['graph']:
