@@ -127,6 +127,7 @@ class EnzymaticReaction(Reaction):
 
 class ReducedExpr():
     def __init__(self, expr):
+        expr = expr.replace('"', '')
         self.expr = expr
         self.parsed_expr = None
         self.expr_val = expr

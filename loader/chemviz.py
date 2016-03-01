@@ -366,9 +366,14 @@ class DotModel():
         # NOTE: When using function, one needs to use numKf/numKb instead of
         # Kf/Kb.
         try:
-            reac.setField( field, float(expr) )
+            if field in [ 'kf', 'kb' ]:
+                setF = field[0].upper() + field[1:]
+            else:
+                setF = field 
+            reac.setField( setF, float(expr) )
             return True
         except ValueError as e:
+            logger_.debug("|REACTION| could not convert to float: %s" % e)
             funcPath = '%s/%s_forward_expr_f' % (reac.path, reac.name)
             forwardExprFunc = moose.Function(funcPath)
             self.add_expr_to_function(expr, forwardExprFunc, constants=constants)
@@ -380,7 +385,8 @@ class DotModel():
             moose.connect(forwardExprFunc, 'valueOut', reac, setField) 
             return True
         except Exception as e:
-            pu.fatal("Failed to set %s to %s" % (field, expr))
+            pu.info("Failed to set %s to %s" % (field, expr))
+            pu.info("Error was %s" % e)
             sys.exit(-1)
 
     def add_reaction_attr(self, reac, attr):
@@ -404,16 +410,16 @@ class DotModel():
         """Add a reaction node to MOOSE"""
         attr = self.G.node[node]
         attr['shape'] = 'rect'
-        logger_.info("| Adding a reaction: %s" % node)
-        logger_.debug("|| With attribs %s:" % attr)
+        logger_.info("|REACTION| %s" % node)
+        logger_.debug("|REACTION| With attribs %s:" % attr)
         reac = moose.Reac('%s/%s' % (compt.path, node))
         self.G.node[node]['reaction'] = reac
         self.add_reaction_attr(reac, attr)
         for sub, tgt in self.G.in_edges(node):
-            logger_.debug("Adding sub to reac: %s" % sub)
+            logger_.debug("|REACTION| Adding sub to reac: %s" % sub)
             moose.connect(reac, 'sub', self.molecules[sub], 'reac')
         for sub, tgt in self.G.out_edges(node):
-            logger_.debug("Adding prd to reac: %s" % tgt)
+            logger_.debug("|REACTION| Adding prd to reac: %s" % tgt)
             moose.connect(reac, 'prd', self.molecules[tgt], 'reac')
         return reac.path
 
@@ -547,7 +553,8 @@ class DotModel():
                 moose_pool.conc = float(expression)
                 logger_.debug("| Assigned conc=%s to pool %s" % (moose_pool.conc, moose_pool))
                 return moose_pool
-            except:
+            except Exception as e:
+                logger_.debug('|POOL| set conc: %s' % e)
                 pass
         elif field == 'n':
             expression = typeObj.n
@@ -556,7 +563,8 @@ class DotModel():
                 logger_.debug("| Assigned n=%s to pool %s" % (moose_pool.n, moose_pool))
                 moose_pool.n = int(expression)
                 return moose_pool
-            except:
+            except Exception as e:
+                logger_.debug("|POOL| %s" % e)
                 pass
 
         assert expression, "Pool must have expression for conc/n in %s" % attribs
@@ -625,9 +633,9 @@ class DotModel():
             for i in range(10, 16):
                 moose.setClock(i, dt)
         else:
-            pu.info("Using plot_dt of %s" %
-                    (self.G.graph['graph'].get('plot_dt', 1)))
-            # moose.setClock(18, float(self.G.graph['graph'].get('plot_dt', 1)))
+            plotDt = float(self.G.graph['graph'].get('plot_dt', 1))
+            pu.info("Using plot_dt of %s for moose.Table2" % plotDt)
+            moose.setClock(18, plotDt)
 
         moose.reinit()
 
