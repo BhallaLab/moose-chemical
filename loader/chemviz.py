@@ -289,7 +289,7 @@ class DotModel():
     def add_expr_to_function(self, expr, func, constants = {}, field = 'conc'):
         """Reformat a given expression and attach it to given function.
 
-        Also connect y0, y1 etc to molecules or variables.
+        Also connect x0, x1 etc to molecules or variables.
         """
         # Get the replaceable identifier in given expression.
         ids = _expr.get_ids(expr)
@@ -321,12 +321,12 @@ class DotModel():
                 localConstants.append(i)
 
         for i, p in enumerate(pools):
-            pp, y = self.molecules[p], "y%s" % i
+            pp, y = self.molecules[p], "x%s" % i
             expr = replace_in_expr(p, y, expr)
             transDict[y] = pp
 
         for i, var in enumerate(variables):
-            v, y = self.variables[var], "y%s" % (len(pools)+i)
+            v, y = self.variables[var], "x%s" % (len(pools)+i)
             expr = replace_in_expr(v.name, y, expr)
             transDict[y] = v
 
@@ -334,7 +334,7 @@ class DotModel():
         logger_.info("Adding expression after replacement: %s" % expr)
         func.expr = expr.replace('"', '')
 
-        # After replacing variables with appropriate yi's, connect
+        # After replacing variables with appropriate xi's, connect
         # them to appropriate MOOSE elements.: GO in ordered sequences.
         for k in sorted(transDict.keys()):
             elem = transDict[k]
@@ -345,7 +345,7 @@ class DotModel():
             else:
                 raise UserWarning("Can't find the type of source elem %" % elem)
             logger_.debug("|READ| %s.%s <-- %s.%s" % (func.path, k, transDict[k].path, f))
-            moose.connect(func, 'requestOut', transDict[k], f)
+            moose.connect(func, 'input', transDict[k], f)
 
 
     def add_forward_rate_expr(self, reac, expr, constants):
