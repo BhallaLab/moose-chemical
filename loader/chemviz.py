@@ -640,7 +640,7 @@ class DotModel():
         moose.reinit()
 
         if 'sim_time' in self.G.graph['graph']:
-            runtime = float(self.G.graph['graph']['sim_time'])
+            runtime = eval(self.G.graph['graph']['sim_time'])
         else:
             runtime = float(run_time)
 
