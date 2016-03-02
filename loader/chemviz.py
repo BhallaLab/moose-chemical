@@ -23,6 +23,7 @@ import re
 from ..utils import test_expr as te
 from ..utils import expression as _expr
 from .. import warnings as warn
+from .. import config
 import operator as ops
 import sys
 from collections import defaultdict
@@ -30,10 +31,8 @@ import reaction
 import tempfile
 import matplotlib.pyplot as plt
 from ..utils import typeclass as tc
-import logging
 
-logger_ = logging.getLogger('chemviz')
-logger_.setLevel(logging.DEBUG)
+logger_ = config.logger_
 
 def yacml_to_dot(text):
     """yacml_to_dot
@@ -146,22 +145,12 @@ class DotModel():
         with tempfile.NamedTemporaryFile( delete = False , suffix = '.dot') as dotFile:
             with open(self.filename, "r") as f:
                 modelText = f.read()
-            logger_.debug("Generating graphviz : %s" % dotFile.name)
+            pu.info("Generating graphviz : %s" % dotFile.name)
             dotFile.write(yacml_to_dot(modelText))
             dotFile.flush()
-            try:
-                self.G = nx.read_dot(dotFile.name)
-            except Exception as e:
-                try:
-                    import pygraphviz 
-                    self.G = nx.from_agraph(pygraphviz.AGraph(file=dotFile.name))
-                except Exception as e:
-                    pu.info("Failed with exception: %s" % e)
-                    pu.fatal(["Failed to load graphviz file"
-                        , "Tried pydot and pygraphviz" ]
-                        )
+            self.G = nx.read_dot(dotFile.name)
 
-        self.G = nx.MultiDiGraph(self.G)
+        # self.G = nx.MultiDiGraph(self.G)
         assert self.G.number_of_nodes() > 0, "Zero molecules"
         self.initialize_graph()
 
@@ -202,6 +191,7 @@ class DotModel():
         for v in self.variables:
             self.add_parameters_to_var(v)
 
+        logger_.info("============ Adding reactions")
         for node in self.G.nodes():
             attr = self.G.node[node]
             if isinstance(attr['type'], tc.EnzymaticReaction):
@@ -423,8 +413,7 @@ class DotModel():
             moose.connect(reac, 'prd', self.molecules[tgt], 'reac')
             prds.append( tgt )
         
-
-        logger_.info("Added a reaction: {0} <== {1} ==> {2}".format( 
+        logger_.info("Reaction: {0} <== {1} ==> {2}".format( 
             ",".join(subs), node, ",".join( prds ) )
             )
 

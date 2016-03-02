@@ -14,11 +14,9 @@ __status__           = "Development"
 
 from loader import chemviz
 import config
-import logging
 import moose.utils
 
-logger_ = logging.getLogger('yacml')
-logger_.setLevel(logging.DEBUG)
+logger_ = config.logger_
 
 def loadYACML(modelFile, **kwargs):
     """loadYACML Load YACML model into MOOSE.
