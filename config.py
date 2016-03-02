@@ -25,14 +25,22 @@ log_levels_ = {
         , 'critical' : logging.CRITICAL
         }
 
-
 logging.basicConfig(level=logging.DEBUG,
     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+    filename = '__moose_yacml__.log',
     datefmt='%m-%d %H:%M',
     filemode='w'
     )
 
-pool_shape_ = 'ellipse'
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+# set a format which is simpler for console use
+formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+# tell the handler to use this format
+console.setFormatter(formatter)
+# add the handler to the root logger
+logging.getLogger('').addHandler(console)
+
 bufpool_shape_ = 'egg'
 reaction_shape_ = 'rect'
 enzyme_reac_shape_ =  'egg'

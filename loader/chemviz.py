@@ -228,7 +228,6 @@ class DotModel():
     def add_molecules(self, node, compt):
         # check for the expression on molecule, it might depend on other
         # molecule. In that case, we must create those molecules first.
-        logger_.info("Adding molecule: %s" % node)
         attr = self.G.node[node]
         if node in self.molecules:
             logger_.info("Molecule %s already exists" % node)
@@ -410,7 +409,7 @@ class DotModel():
         """Add a reaction node to MOOSE"""
         attr = self.G.node[node]
         attr['shape'] = 'rect'
-        logger_.info("|REACTION| %s" % node)
+        subs, prds = [], []
         logger_.debug("|REACTION| With attribs %s:" % attr)
         reac = moose.Reac('%s/%s' % (compt.path, node))
         self.G.node[node]['reaction'] = reac
@@ -418,9 +417,20 @@ class DotModel():
         for sub, tgt in self.G.in_edges(node):
             logger_.debug("|REACTION| Adding sub to reac: %s" % sub)
             moose.connect(reac, 'sub', self.molecules[sub], 'reac')
+            subs.append( sub )
         for sub, tgt in self.G.out_edges(node):
             logger_.debug("|REACTION| Adding prd to reac: %s" % tgt)
             moose.connect(reac, 'prd', self.molecules[tgt], 'reac')
+            prds.append( tgt )
+        
+
+        logger_.info("Added a reaction: {0} <== {1} ==> {2}".format( 
+            ",".join(subs), node, ",".join( prds ) )
+            )
+
+        if not (subs and prds ):
+            mu.warn( "CAREFUL! This reaction has missing substrates/products" )
+
         return reac.path
 
     def add_enzymatic_reaction(self, node, compt):
@@ -603,7 +613,7 @@ class DotModel():
         # Add a table to element. 
         # TODO: Each molecule can have more than one table? 
         elem = moose_elem.name
-        logger_.info("| Adding a Table on : %s.%s" % (elem, field))
+        logger_.debug("Adding a Table on : %s.%s" % (elem, field))
         tablePath = '/%s/table_%s_%s' % (moose_elem.path, elem, field)
         tab = moose.Table2(tablePath)
         moose.connect(tab, 'requestOut', moose_elem, 'get' + field[0].upper() + field[1:])
