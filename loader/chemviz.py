@@ -13,6 +13,7 @@ __email__            = "dilawars@ncbs.res.in"
 __status__           = "Development"
 
 
+import networkx.drawing.nx_agraph as nxAG
 import networkx as nx
 import warnings
 import moose
@@ -148,7 +149,7 @@ class DotModel():
             pu.info("Generating graphviz : %s" % dotFile.name)
             dotFile.write(yacml_to_dot(modelText))
             dotFile.flush()
-            self.G = nx.read_dot(dotFile.name)
+            self.G = nxAG.read_dot(dotFile.name)
 
         # self.G = nx.MultiDiGraph(self.G)
         assert self.G.number_of_nodes() > 0, "Zero molecules"
@@ -207,7 +208,7 @@ class DotModel():
         # Dump the edited graph into a temp file.
         outfile = '%s.dot' % self.filename
         logger_.debug("Writing network to : %s" % outfile)
-        nx.write_dot(self.G, outfile)
+        nxAG.write_dot(self.G, outfile)
 
     def find_node(self, node_name):
         for n in self.G.nodes():
