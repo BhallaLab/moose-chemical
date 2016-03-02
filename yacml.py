@@ -12,7 +12,7 @@ __email__            = "dilawars@ncbs.res.in"
 __status__           = "Development"
 
 
-from loader import chemviz
+import chemviz
 import config
 import moose.utils
 

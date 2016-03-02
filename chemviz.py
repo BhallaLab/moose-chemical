@@ -28,7 +28,6 @@ from .. import config
 import operator as ops
 import sys
 from collections import defaultdict
-import reaction
 import tempfile
 import matplotlib.pyplot as plt
 from ..utils import typeclass as tc
@@ -52,7 +51,7 @@ def to_bool(arg):
 def to_float(string):
     """Convert a given string to float """
     string = string.replace('"', '')
-    return float(string)
+    return eval(string)
 
 def replace_in_expr(frm, to, expr):
     repExpr = re.compile(r'[\w]{0}[\w]'.format(frm))
