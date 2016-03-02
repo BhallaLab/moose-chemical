@@ -21,16 +21,16 @@ import moose.print_utils as pu
 import moose.utils as mu
 import ast
 import re
-from ..utils import test_expr as te
-from ..utils import expression as _expr
-from .. import warnings as warn
-from .. import config
+from utils import test_expr as te
+from utils import expression as _expr
+from . import warnings as warn
+from . import config
 import operator as ops
 import sys
 from collections import defaultdict
 import tempfile
 import matplotlib.pyplot as plt
-from ..utils import typeclass as tc
+from utils import typeclass as tc
 
 logger_ = config.logger_
 
