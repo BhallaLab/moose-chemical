@@ -97,7 +97,23 @@ class DotModel():
         self.__cwd__ = ""
         self.__cur_compt__ = None
         # Finally load the model
+        self.globals_ = None
         self.load()
+
+    def create_compartment( self, compt_name ):
+        """Create a compartment with given geomtry. If none given, use
+        cylinderical
+        """
+        comptpath = '%s/%s' % (self.modelPath, compt_name)
+        if self.globals_.get('geometry', 'cylinder').lower() == 'cube':
+            logger_.info("Creating cubical compartment")
+            curCompt =  moose.CubeMesh( comptpath )
+        else:
+            logger_.info("Creating cylinderical (default) compartment")
+            curCompt = moose.CylMesh( comptpath )
+        curCompt.volume = float(self.globals_['volume'])
+        return curCompt
+
 
     def init_moose(self, compt):
         """Initialize paths in MOOSE"""
@@ -105,11 +121,9 @@ class DotModel():
             moose.Neutral(path)
 
         comptName = str(self.G)
-
         curCompt = None
         if compt is None:
-            logger_.info("Creating compartment: %s" % comptName)
-            curCompt =  moose.CubeMesh('%s/%s' % (self.modelPath, comptName))
+            curCompt = self.create_compartment( comptName )
         else: 
             curCompt = compt
 
@@ -153,6 +167,7 @@ class DotModel():
         # self.G = nx.MultiDiGraph(self.G)
         assert self.G.number_of_nodes() > 0, "Zero molecules"
         self.initialize_graph()
+        self.globals_ = self.G.graph['graph']
 
 
     def checkNode(self, n):
@@ -168,7 +183,6 @@ class DotModel():
         self.init_moose(compt)
 
         compt = self.__cur_compt__ 
-        compt.volume = to_float(self.G.graph['graph']['volume'])
 
         # make sure the pools/buffpools are added to MOOSE before adding
         # reactions.
