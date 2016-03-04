@@ -257,8 +257,9 @@ class DotModel():
         logger_.debug("moose.Function mode: %s" % f.mode)
         self.variables[node] = f
 
-    def replace_local_consts(self, expr, consts, const_dict):
-        """replace all local constants in dictionary.
+    def replace_constants(self, expr, consts, const_dict):
+        """
+        replace all local/global constants in dictionary.
         """
         if len(consts) == 0:
             return expr
@@ -266,15 +267,22 @@ class DotModel():
             logger_.warn("These consts were not found in reaction: %s" % consts)
             return expr
 
+        # The list of  constants, wheather local or global is generated
+        # beforehand. It is neccessay to sort it and replace the smaller
+        # constant first. Now I forgot why I was doing this, but it is working
+        # and bug free.
         for c in sorted(consts, key=lambda x: len(x)):
+            # t is a special variable. It is connected to internal clock
+            # automatically.
             if c == 't':
                 continue
             if c in const_dict:
+                logger_.debug("Local constant : %s" % c)
                 expr = replace_in_expr(c, const_dict[c], expr)
             elif c in self.G.graph['graph']:
+                logger_.debug("Found in globals: %s" % c)
                 expr = replace_in_expr(c, self.G.graph['graph'][c], expr)
             else:
-                # Search in graph globals
                 logger_.debug("Constant %s not found in const" % c)
                 continue
         return expr
@@ -289,6 +297,10 @@ class DotModel():
         ids = _expr.get_ids(expr)
         logger_.debug("[FUNC| IDs: %s" % ",".join(ids))
 
+        # NOTE: Add globals to constants as well. Local must override the
+        # global.
+        constants.update(self.G.graph['graph'])
+
         # Find a subexpression, insert into expression. If expression changes,
         # call this function again.
         new_expr = _expr.replace_possible_subexpr(expr, constants, ids)
@@ -302,7 +314,7 @@ class DotModel():
         ## NOTE: Or it is 't'
         pools = set()
         variables = set()
-        localConstants = []
+        constantsList = []
         transDict = {}
 
         for i in ids:
@@ -312,19 +324,21 @@ class DotModel():
                 variables.add(i)
             else: 
                 # If this is a numerical value, put it in constants else replace
-                localConstants.append(i)
+                constantsList.append(i)
 
         for i, p in enumerate(pools):
             pp, y = self.molecules[p], "x%s" % i
             expr = replace_in_expr(p, y, expr)
             transDict[y] = pp
 
+        # These variables are to be replaced by x0, x1 etc. Variables takes
+        # input from either moose.Function or moose.Pools.
         for i, var in enumerate(variables):
             v, y = self.variables[var], "x%s" % (len(pools)+i)
             expr = replace_in_expr(v.name, y, expr)
             transDict[y] = v
 
-        expr = self.replace_local_consts(expr, localConstants, constants)
+        expr = self.replace_constants(expr, constantsList, constants)
         logger_.info("Adding expression after replacement: %s" % expr)
         func.expr = expr.replace('"', '')
 
