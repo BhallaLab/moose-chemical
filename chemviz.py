@@ -377,7 +377,6 @@ class DotModel():
 
     def add_rate_expr(self, reac, field, expr, constants):
         """Add an expression for forward/backward rate"""
-        logger_.debug("|=  Rate expression for %s is %s" % (field, expr))
         # If expr can be converted to float, simply set the expression to float.
         # Otherwise, compute the value using moose.Function and set the value.
         # NOTE: When using function, one needs to use numKf/numKb instead of
@@ -385,20 +384,22 @@ class DotModel():
         try:
             if field in [ 'kf', 'kb' ]:
                 setF = field[0].upper() + field[1:]
-            else:
+            elif field in [ 'numKf', 'numKb' ]:
                 setF = field 
-            reac.setField( setF, float(expr) )
+            value = float( eval(str(expr)) )
+            reac.setField( setF, value )
+            logger_.debug("|=  Rate expression for %s is %f" % (field, value))
             return True
-        except ValueError as e:
+        except Exception as e:
             logger_.debug("|REACTION| could not convert to float: %s" % e)
-            funcPath = '%s/%s_forward_expr_f' % (reac.path, reac.name)
+            funcPath = '%s/func_%s' % (reac.path, field)
             forwardExprFunc = moose.Function(funcPath)
             self.add_expr_to_function(expr, forwardExprFunc, constants=constants)
             forwardExprFunc.mode = 1
             # NOTE: setting up Kf is not allowed, one can only set numKf and numKb.
             # Also one has to be careful about the volume. 
             setField = 'set' + field[0].upper() + field[1:]
-            logger_.debug("||WRITE| %s --> %s.%s" % (forwardExprFunc, reac, field))
+            logger_.debug("||WRITE| %s.valueOut --> %s.%s" % (forwardExprFunc, reac, field))
             moose.connect(forwardExprFunc, 'valueOut', reac, setField) 
             return True
         except Exception as e:
@@ -441,7 +442,7 @@ class DotModel():
             moose.connect(reac, 'prd', self.molecules[tgt], 'reac')
             prds.append( tgt )
         
-        logger_.info("Reaction: {0} <== {1} ==> {2}".format( 
+        logger_.info("Added reaction: {0} <== {1} ==> {2}".format( 
             ",".join(subs), node, ",".join( prds ) )
             )
 
@@ -460,8 +461,8 @@ class DotModel():
 
         mooseEnz = moose.Enz(enzPath)
 
-        mooseEnz.Km = float(attr['km'])
-        mooseEnz.kcat = float(attr['kcat'])
+        mooseEnz.Km = eval(attr['km'])
+        mooseEnz.kcat = eval(attr['kcat'])
 
         moose.connect(mooseEnz, 'enz', enz, 'reac')
 
@@ -574,32 +575,34 @@ class DotModel():
         field = typeObj.concOrN
         expression = None
         if field == 'conc':
-            expression = typeObj.conc
+            expression = str(typeObj.conc)
+            assert expression
             try: 
-                moose_pool.concInit = float(expression)
-                moose_pool.conc = float(expression)
+                moose_pool.concInit = eval(expression)
+                moose_pool.conc = eval(expression)
                 logger_.debug("| Assigned conc=%s to pool %s" % (moose_pool.conc, moose_pool))
                 return moose_pool
             except Exception as e:
                 logger_.debug('|POOL| set conc: %s' % e)
                 pass
         elif field == 'n':
-            expression = typeObj.n
+            expression = str(typeObj.n)
             try:
-                moose_pool.nInit = float(expression)
+                moose_pool.nInit = eval(str(expression))
                 logger_.debug("| Assigned n=%s to pool %s" % (moose_pool.n, moose_pool))
-                moose_pool.n = int(expression)
+                moose_pool.n = eval(str(expression))
                 return moose_pool
             except Exception as e:
                 logger_.debug("|POOL| %s" % e)
                 pass
 
-        assert expression, "Pool must have expression for conc/n in %s" % attribs
+        assert expression, \
+                "Pool %s must have expression for conc/n in %s" % (moose_pool, attribs)
         logger_.info("Adding expr %s to moose_pool %s" % (expression, moose_pool))
         ## FIXME: issue #32 on moose-core. Function must not be created under
         ## stoich.path.
         moose.Neutral("%s/%s" % ( moose_pool.path, field ))
-        func = moose.Function("%s/%s/func" % (moose_pool.path, field))
+        func = moose.Function("%s/%s_func" % (moose_pool.path, field))
         self.add_expr_to_function(expression, func, attribs, field)
 
         outfield = 'set' + field[0].upper()+field[1:]
@@ -655,12 +658,12 @@ class DotModel():
 
         # get dt from chemviz file
         if self.G.graph['graph'].get('solver', 'ksolve') == 'ksolve':
-            dt = float(self.G.graph['graph'].get('dt', 0.01))
+            dt = eval(self.G.graph['graph'].get('dt', 0.01))
             pu.info("Using dt=%s for all chemical process" % dt)
             for i in range(10, 16):
                 moose.setClock(i, dt)
         else:
-            plotDt = float(self.G.graph['graph'].get('plot_dt', 1))
+            plotDt = eval(self.G.graph['graph'].get('plot_dt', 1))
             pu.info("Using plot_dt of %s for moose.Table2" % plotDt)
             moose.setClock(18, plotDt)
 

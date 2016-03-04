@@ -23,10 +23,10 @@ class Pool(object):
         super(Pool, self).__init__()
         self.name = name
         self.concOrN = 'conc'
-        self.conc = 0.0
+        self.conc = "0.0"
         self.concInit = 0.0
         self.nInit = 0.0
-        self.n = 0
+        self.n = "0.0"
         self.rate = False
         self.assign(attribs)
 
@@ -34,10 +34,10 @@ class Pool(object):
 
         # Do the initialization.
         if 'conc_init' in attribs:
-            self.concInit = float(attribs['conc_init'])
+            self.concInit = attribs['conc_init']
         elif 'N_init' in attribs:
             self.concOrN = 'n'
-            self.nInit = float(attribs['N_init'])
+            self.nInit = attribs['N_init']
         else:
             pass
 
@@ -77,12 +77,12 @@ class Enzyme(object):
 
     def __init__(self, name, attribs):
         try:
-            self.km = float(attribs['km'])
+            self.km = attribs['km']
         except:
             self.km = attribs['km']
 
         try:
-            self.kcat = float(attribs['kcat'])
+            self.kcat = attribs['kcat']
         except:
             self.kcat = attribs['kcat']
 
