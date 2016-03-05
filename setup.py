@@ -38,9 +38,9 @@ classifiers = [
 setup(
     name = "moose-yacml",
     version = "0.1.0",
-    description = "Yet Another Chemical Markup Language (YACML) in MOOSE"
+    description = "Yet Another Chemical Markup Language (YACML) in MOOSE",
     long_description = readme,
-    packages = ["yacml" ],
+    packages = [ "kinetics", "parser", "utils", "py_expression_eval" ],
     package_data = {},
     install_requires = [ ],
     author = "Dilawar Singh",
