@@ -36,11 +36,11 @@ classifiers = [
     ]
 
 setup(
-    name = "moose-yacml",
+    name = "yacml",
     version = "0.1.0",
     description = "Yet Another Chemical Markup Language (YACML) in MOOSE",
     long_description = readme,
-    packages = [ "kinetics", "parser", "utils", "py_expression_eval" ],
+    packages = [ ".", "kinetics", "parser", "utils", "py_expression_eval" ],
     package_data = {},
     install_requires = [ ],
     author = "Dilawar Singh",
