@@ -16,9 +16,29 @@ __status__           = "Development"
 
 import networkx as nx
 import networkx.drawing.nx_agraph as nxpy
+from config import logger_
 
-def to_networkx( dot_file ):
-    """read dot_file and turn it into a networkx graph. 
-    """
-    nxG = nxpy.read_dot( dot_file )
-    return nxG
+def yacml_to_dot( yacml_text ):
+    """Convert yacml_text to valid graphviz text """
+    gvText = yacml_text.replace( 'compartment', 'digraph' )
+    return gvText
+
+def create_graph( yacml_file ):
+    logger_.info("Parsing %s to create netowrkx graph" % yacml_file)
+    # Create a temporary file to convert the yacml file to dot file. After this,
+    # parser the dot file to generate the graph.
+    with tempfile.NamedTemporaryFile( delete = True , suffix = '.dot') as dotFile:
+        with open(self.filename, "r") as f:
+            modelText = f.read()
+        logger_.info("Generating graphviz : %s" % dotFile.name)
+        dotFile.write(yacml_to_dot(modelText))
+        dotFile.flush()
+        try:
+            network = nxAG.read_dot(dotFile.name)
+        except Exception as e:
+            logger_.fatal( 'Failed to load input file. Error was %s' % e )
+            quit()
+
+    network = nx.MultiDiGraph( network )
+    assert network.number_of_nodes() > 0, "Zero molecules"
+    return network

@@ -24,7 +24,8 @@ def loadYACML(modelFile, **kwargs):
     :param modelFile: Path of model.
     :param **kwargs:
     """
-    model = chemviz.DotModel(modelFile)
+    networkxG = parser.create_graph( modelFile )
+    model = chemviz.DotModel( networkxG )
     return model
 
 def main(args):

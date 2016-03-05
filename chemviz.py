@@ -30,7 +30,6 @@ from collections import defaultdict
 import tempfile
 import matplotlib.pyplot as plt
 from utils import typeclass as tc
-
 logger_ = config.logger_
 
 def yacml_to_dot(text):
@@ -50,7 +49,7 @@ def to_bool(arg):
 def to_float(string):
     """Convert a given string to float """
     string = string.replace('"', '')
-    return eval(string)
+    return float(eval(string))
 
 def replace_in_expr(frm, to, expr):
     repExpr = re.compile(r'[\w]{0}[\w]'.format(frm))
@@ -70,14 +69,16 @@ def replace_in_expr(frm, to, expr):
 def get_path_of_node(moose_compt, name):
     return "%s/%s" % (moose_compt.path, name)
 
+
 class DotModel():
     '''
     Parse graphviz file and populate a chemical model in MOOSE.
     '''
 
-    def __init__(self, modelFile):
-        self.filename = modelFile
-        self.G = nx.MultiDiGraph()
+    def __init__(self, G):
+        self.G = G
+        self.globals_ = G.graph['graph']
+        self.filename = self.globals_['filename']
         self.molecules = {}
         self.npools = 0
         self.nbufpool = 0
@@ -152,22 +153,6 @@ class DotModel():
         logger_.info("Type of node %s is %s" % (n, ntype))
         self.G.node[n]['type'] = ntype
         
-    def create_graph(self):
-        """Create chemical network """
-
-        with tempfile.NamedTemporaryFile( delete = False , suffix = '.dot') as dotFile:
-            with open(self.filename, "r") as f:
-                modelText = f.read()
-            pu.info("Generating graphviz : %s" % dotFile.name)
-            dotFile.write(yacml_to_dot(modelText))
-            dotFile.flush()
-            self.G = nxAG.read_dot(dotFile.name)
-
-        # self.G = nx.MultiDiGraph(self.G)
-        assert self.G.number_of_nodes() > 0, "Zero molecules"
-        self.initialize_graph()
-        self.globals_ = self.G.graph['graph']
-
 
     def checkNode(self, n):
         return True
@@ -692,9 +677,7 @@ def writeSBMLModel(dot_file, outfile = None):
     model.writeSBML(outfile)
 
 def main():
-    writeSBMLModel(dot_file = "./smolen_baxter_bryne.dot"
-            , outfile = "smolen_baxter_bryne.sbml"
-            )
+    pass
 
 if __name__ == '__main__':
     main()
