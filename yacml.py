@@ -15,8 +15,8 @@ __status__           = "Development"
 import chemviz
 import config
 import moose.utils
-from parser import parser
-from parser import pre_processor
+from yparser import yparser
+from yparser import pre_processor
 
 logger_ = config.logger_
 
@@ -27,7 +27,7 @@ def loadYACML(modelFile, **kwargs):
     :param **kwargs:
     """
 
-    networkxG = parser.create_graph( modelFile )
+    networkxG = yparser.create_graph( modelFile )
 
     # Pre-process the expressions on graph.
     pre_processor.pre_process( networkxG )
