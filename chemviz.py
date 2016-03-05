@@ -15,7 +15,6 @@ __status__           = "Development"
 
 import networkx.drawing.nx_agraph as nxAG
 import networkx as nx
-import warnings
 import moose
 import moose.print_utils as pu
 import moose.utils as mu
@@ -23,7 +22,7 @@ import ast
 import re
 from utils import test_expr as te
 from utils import expression as _expr
-from . import warnings as warn
+from . import notify as warn
 from . import config
 import operator as ops
 import sys

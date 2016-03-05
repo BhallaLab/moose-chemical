@@ -2,6 +2,9 @@
 
 YACML
 
-Yet Another Chemical Markup Language
+Yet Another Chemical Markup Language A wrapper on top of `dot` language. 
 
-A wrapper on top of `dot` language.
+Useful for writing chemical models. Support of [MOOSE
+simulator](https://moose.ncbs.res.in).
+
+
