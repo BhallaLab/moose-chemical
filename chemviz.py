@@ -30,26 +30,8 @@ from collections import defaultdict
 import tempfile
 import matplotlib.pyplot as plt
 from utils import typeclass as tc
+from utils.helper import *
 logger_ = config.logger_
-
-def yacml_to_dot(text):
-    """yacml_to_dot
-    Convert YACML to a legal dot.
-
-    :param text: Text of YACML model.
-    """
-    text = text.replace('compartment', 'digraph')
-    return text
-
-def to_bool(arg):
-    if arg.lower() in [ "0", "false", "no" ]:
-        return False
-    return True
-
-def to_float(string):
-    """Convert a given string to float """
-    string = string.replace('"', '')
-    return float(eval(string))
 
 def replace_in_expr(frm, to, expr):
     repExpr = re.compile(r'[\w]{0}[\w]'.format(frm))
