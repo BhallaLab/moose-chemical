@@ -22,8 +22,8 @@ import ast
 import re
 from utils import test_expr as te
 from utils import expression as _expr
-from . import notify as warn
-from . import config
+import notify as warn
+import config
 import operator as ops
 import sys
 from collections import defaultdict
