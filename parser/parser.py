@@ -15,7 +15,7 @@ __status__           = "Development"
 
 
 import networkx as nx
-import networkx.drawing.nx_agraph as nxpy
+import networkx.drawing.nx_agraph as nxAG
 import tempfile
 
 from config import logger_

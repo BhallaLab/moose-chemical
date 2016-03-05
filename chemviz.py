@@ -51,7 +51,6 @@ def replace_in_expr(frm, to, expr):
 def get_path_of_node(moose_compt, name):
     return "%s/%s" % (moose_compt.path, name)
 
-
 class DotModel():
     '''
     Parse graphviz file and populate a chemical model in MOOSE.
@@ -59,7 +58,7 @@ class DotModel():
 
     def __init__(self, G):
         self.G = G
-        self.globals_ = G.graph['graph']
+        self.globals_ = self.G.graph['graph']
         self.filename = self.globals_['filename']
         self.molecules = {}
         self.npools = 0
@@ -79,7 +78,6 @@ class DotModel():
         self.__cwd__ = ""
         self.__cur_compt__ = None
         # Finally load the model
-        self.globals_ = None
         self.load()
 
     def create_compartment( self, compt_name ):
@@ -145,9 +143,8 @@ class DotModel():
     def load(self, compt = None):
         '''Load given model into MOOSE'''
 
-        self.create_graph()
+        self.initialize_graph( )
         self.init_moose(compt)
-
         compt = self.__cur_compt__ 
 
         # make sure the pools/buffpools are added to MOOSE before adding

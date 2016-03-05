@@ -16,6 +16,7 @@ import chemviz
 import config
 import moose.utils
 from parser import parser
+from parser import pre_processor
 
 logger_ = config.logger_
 
@@ -25,8 +26,15 @@ def loadYACML(modelFile, **kwargs):
     :param modelFile: Path of model.
     :param **kwargs:
     """
+
     networkxG = parser.create_graph( modelFile )
+
+    # Pre-process the expressions on graph.
+    pre_processor.pre_process( networkxG )
+
+    # Once graph is preprocess, load it in moose.
     model = chemviz.DotModel( networkxG )
+
     return model
 
 def main(args):
