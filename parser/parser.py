@@ -16,7 +16,10 @@ __status__           = "Development"
 
 import networkx as nx
 import networkx.drawing.nx_agraph as nxpy
+import tempfile
+
 from config import logger_
+
 
 def yacml_to_dot( yacml_text ):
     """Convert yacml_text to valid graphviz text """
@@ -28,7 +31,7 @@ def create_graph( yacml_file ):
     # Create a temporary file to convert the yacml file to dot file. After this,
     # parser the dot file to generate the graph.
     with tempfile.NamedTemporaryFile( delete = True , suffix = '.dot') as dotFile:
-        with open(self.filename, "r") as f:
+        with open( yacml_file, "r") as f:
             modelText = f.read()
         logger_.info("Generating graphviz : %s" % dotFile.name)
         dotFile.write(yacml_to_dot(modelText))
@@ -40,5 +43,6 @@ def create_graph( yacml_file ):
             quit()
 
     network = nx.MultiDiGraph( network )
+    network.graph['graph']['filename'] = yacml_file
     assert network.number_of_nodes() > 0, "Zero molecules"
     return network

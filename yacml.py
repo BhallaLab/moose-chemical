@@ -15,6 +15,7 @@ __status__           = "Development"
 import chemviz
 import config
 import moose.utils
+from parser import parser
 
 logger_ = config.logger_
 
