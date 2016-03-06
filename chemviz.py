@@ -133,7 +133,6 @@ class DotModel():
         logger_.info("Type of node %s is %s" % (n, ntype))
         self.G.node[n]['type'] = ntype
         
-
     def checkNode(self, n):
         return True
 
@@ -274,17 +273,6 @@ class DotModel():
         ids = _expr.get_ids(expr)
         logger_.debug("[FUNC| IDs: %s" % ",".join(ids))
 
-        # NOTE: Add globals to constants as well. Local must override the
-        # global.
-        constants.update(self.G.graph['graph'])
-
-        # Find a subexpression, insert into expression. If expression changes,
-        # call this function again.
-        new_expr = _expr.replace_possible_subexpr(expr, constants, ids)
-        if new_expr != expr:
-            # and serach of ids again.
-            return self.add_expr_to_function(new_expr, func, constants, field)
-
         # If id is found in molecules, its a moose.Pool/BufPool, if it is a
         # variable, its moose.Function else it is a constant which must be
         # replaced by a value.  
@@ -315,7 +303,6 @@ class DotModel():
             expr = replace_in_expr(v.name, y, expr)
             transDict[y] = v
 
-        expr = self.replace_constants(expr, constantsList, constants)
         logger_.info("Adding expression after replacement: %s" % expr)
         func.expr = expr.replace('"', '')
 
