@@ -398,9 +398,9 @@ class DotModel():
             moose.connect(reac, 'prd', self.molecules[tgt], 'reac')
             prds.append( tgt )
 
-        logger_.info("Added reaction {name}: {subs} <== ==> {prds}".format( 
+        logger_.info("Added reaction {name}: {subs} <== {kb}, {kf} ==> {prds}".format( 
             name = node, subs=",".join(subs), prds=",".join( prds ) 
-            # , kf = str(reac.Kf), kb = str(reac.Kb))
+            , kf = str(reac.numKf), kb = str(reac.numKb)
             )
             )
         if not (subs and prds ):
