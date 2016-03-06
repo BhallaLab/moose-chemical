@@ -14,7 +14,7 @@ __status__           = "Development"
 
 import chemviz
 import config
-import moose.utils
+import moose.utils as mu
 from yparser import yparser
 from yparser import pre_processor
 

@@ -169,7 +169,7 @@ def reduce_key_val_on_node( key, val, local_vars, network):
     try:
         st = ast.parse( val )
     except SyntaxError as e:
-        logger_.warn("Expr %s=%s (node %s) is malformed" % (key, val, node))
+        logger_.warn("Expr %s=%s is malformed" % (key, val))
         logger_.warn("... Ignoring. ")
         return False
 
@@ -178,7 +178,6 @@ def reduce_key_val_on_node( key, val, local_vars, network):
     if not reduce_expr( val )[1]:
         # It can't be reduced. Don't change it.
         otherVars = get_identifiers( st )
-        print otherVars
         for v in otherVars:
             if v in local_vars:
                 logger_.debug("Found replacement in locals")
@@ -192,7 +191,8 @@ def reduce_key_val_on_node( key, val, local_vars, network):
             else:
                 pass
     msg += ', NEW = %s' % val
-    logger_.debug(msg)
+    logger_.info(msg)
+    return True
                 
 def pre_process( network ):
     """ Pre-process the graph in a way that all subtitutions are made.
