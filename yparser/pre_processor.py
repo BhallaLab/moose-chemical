@@ -166,7 +166,6 @@ def reduce_node_expr( n, network):
             expG.add_edge( k, d )
 
     # Once the dependencies graph is build, we need to reduce it.
-    print "===="
     for x in nx.dfs_postorder_nodes( expG ):
         # If its expr is not available locally, look-up in global graph. If we
         # don't find it in global also, then  it must be another node.
@@ -174,7 +173,6 @@ def reduce_node_expr( n, network):
             if x in globals_: 
                 # Copy its value from globals.
                 expG.node[x]['expr'] = globals_[x]
-                print x, globals_[x]
             elif x in network.nodes():
                 # x is another node in network. Its expression is itself.
                 expG.node[x]['expr'] = x
@@ -197,7 +195,8 @@ def reduce_node_expr( n, network):
                 attr[x] = newExpr
                 logger_.debug( '@node %s, reduced expr = %s' % (x, newExpr) )
         else:
-            print "No expression found for node %s, %s" % (x, expG.node[x])
+            logger_.debug( "No expression found for node %s, %s" % (x,
+                expG.node[x]))
 
 
 def reduce_key_val_on_node( key, val, expr_graph, network):

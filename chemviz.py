@@ -198,7 +198,6 @@ class DotModel():
         if node in self.molecules:
             logger_.info("Molecule %s already exists" % node)
             return self.molecules[node]
-
         p = None
         if isinstance(attr['type'], tc.BufPool):
             p = self.add_bufpool(node, compt)
@@ -209,12 +208,18 @@ class DotModel():
 
         assert p, "Must have created a moose.Pool/BufPool"
         self.molecules[node] = p
-        if  attr.get('conc_init', False):
-            p.concInit = float(attr['conc_init'])
-            logger_.debug("|| set Conc_init to %s" % p.concInit)
-        elif attr.get('N_init', False):
-            p.nInit = float(attr['N_init'])
-            logger_.debug("|| Set N_init to %s" % p.nInit)
+        if  attr.get('conc', False):
+            try:
+                p.concInit = float(eval(attr['conc']))
+                logger_.debug("|| set concInit to %s" % p.concInit)
+            except Exception as e:
+                pass
+        elif attr.get('N', False):
+            try:
+                p.nInit = float(eval(attr['N']))
+                logger_.debug("|| Set nInit to %s" % p.nInit)
+            except Exception as e:
+                pass
         else:
             pass
 
@@ -279,7 +284,6 @@ class DotModel():
         ## NOTE: Or it is 't'
         pools = set()
         variables = set()
-        constantsList = []
         transDict = {}
 
         for i in ids:
@@ -288,8 +292,7 @@ class DotModel():
             elif self.variables.get(i, None) is not None:
                 variables.add(i)
             else: 
-                # If this is a numerical value, put it in constants else replace
-                constantsList.append(i)
+                pass
 
         for i, p in enumerate(pools):
             pp, y = self.molecules[p], "x%s" % i
@@ -336,7 +339,7 @@ class DotModel():
                 setF = field[0].upper() + field[1:]
             elif field in [ 'numKf', 'numKb' ]:
                 setF = field 
-            value = float( eval(str(expr)) )
+            value = eval(str(expr))
             reac.setField( setF, value )
             logger_.debug("|=  Rate expression for %s is %f" % (field, value))
             return True
@@ -379,10 +382,13 @@ class DotModel():
         attr = self.G.node[node]
         attr['shape'] = 'rect'
         subs, prds = [], []
+
         logger_.debug("|REACTION| With attribs %s:" % attr)
         reac = moose.Reac('%s/%s' % (compt.path, node))
         self.G.node[node]['reaction'] = reac
+
         self.add_reaction_attr(reac, attr)
+
         for sub, tgt in self.G.in_edges(node):
             logger_.debug("|REACTION| Adding sub to reac: %s" % sub)
             moose.connect(reac, 'sub', self.molecules[sub], 'reac')
@@ -391,11 +397,12 @@ class DotModel():
             logger_.debug("|REACTION| Adding prd to reac: %s" % tgt)
             moose.connect(reac, 'prd', self.molecules[tgt], 'reac')
             prds.append( tgt )
-        
-        logger_.info("Added reaction: {0} <== {1} ==> {2}".format( 
-            ",".join(subs), node, ",".join( prds ) )
-            )
 
+        logger_.info("Added reaction {name}: {subs} <== ==> {prds}".format( 
+            name = node, subs=",".join(subs), prds=",".join( prds ) 
+            # , kf = str(reac.Kf), kb = str(reac.Kb))
+            )
+            )
         if not (subs and prds ):
             mu.warn( "CAREFUL! This reaction has missing substrates/products" )
 
