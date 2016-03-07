@@ -352,19 +352,15 @@ class DotModel():
         except Exception as e:
             logger_.debug("|REACTION| could not convert to float: %s" % e)
             funcPath = '%s/func_%s' % (reac.path, field)
-            forwardExprFunc = moose.Function(funcPath)
-            self.add_expr_to_function(expr, forwardExprFunc, constants=constants)
-            forwardExprFunc.mode = 1
+            rateFunc = moose.Function(funcPath)
+            self.add_expr_to_function(expr, rateFunc, constants=constants)
+            rateFunc.mode = 1
             # NOTE: setting up Kf is not allowed, one can only set numKf and numKb.
             # Also one has to be careful about the volume. 
             setField = 'set' + field[0].upper() + field[1:]
-            logger_.debug("||WRITE| %s.valueOut --> %s.%s" % (forwardExprFunc, reac, field))
-            moose.connect(forwardExprFunc, 'valueOut', reac, setField) 
+            logger_.debug("||WRITE| %s.valueOut --> %s.%s" % (rateFunc, reac, field))
+            moose.connect(rateFunc, 'valueOut', reac, setField) 
             return True
-        except Exception as e:
-            logger_.warn("Failed to set %s to %s" % (field, expr))
-            logger_.warn(" Error was %s" % e)
-            sys.exit(-1)
 
     def add_reaction_attr(self, reac, attr):
         """Add attributes to reaction.
@@ -393,8 +389,6 @@ class DotModel():
         reac = moose.Reac('%s/%s' % (compt.path, node))
         self.G.node[node]['reaction'] = reac
 
-        self.add_reaction_attr(reac, attr)
-
         for sub, tgt in self.G.in_edges(node):
             logger_.debug("|REACTION| Adding sub to reac: %s" % sub)
             moose.connect(reac, 'sub', self.molecules[sub], 'reac')
@@ -403,6 +397,8 @@ class DotModel():
             logger_.debug("|REACTION| Adding prd to reac: %s" % tgt)
             moose.connect(reac, 'prd', self.molecules[tgt], 'reac')
             prds.append( tgt )
+
+        self.add_reaction_attr(reac, attr)
 
         logger_.info("Added reaction {name}: {subs} <== {kb}, {kf} ==> {prds}".format( 
             name = node, subs=",".join(subs), prds=",".join( prds ) 
