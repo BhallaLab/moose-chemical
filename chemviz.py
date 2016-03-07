@@ -442,7 +442,7 @@ class DotModel():
         graph/subgraph.
 
         """
-        solver = self.G.graph['graph'].get('solver', 'ksolve')
+        solver = self.G.graph['graph'].get('solver', 'deterministic')
         self.setup_solver(solver.lower(), self.__cur_compt__)
 
 
@@ -455,22 +455,23 @@ class DotModel():
         """
         pu.info("Adding a solver %s to compartment %s" % (solver, compt.path))
         s = None
-        if solver == "ksolve":
+        if solver == "deterministic":
             pu.info('[INFO] Using deterministic solver')
             s = moose.Ksolve('%s/ksolve' % compt.path)
-        elif solver == 'gsolve':
+        elif solver == 'stochastic':
             pu.info('Using stochastic solver')
             s = moose.Gsolve('%s/gsolve' % compt.path)
             pu.info("Setting up useClockedUpdate = True")
             s.useClockedUpdate = True
         else:
-            msg = "Unknown solver: %s. Using ksolve." % solver
+            msg = "Unknown solver: %s. Using 'deterministic' solver." % solver
+            msg += "\n Supported solvers: 'stochastic' and 'deterministic'
+            (default)'"
             pu.warn(msg)
             s = moose.Ksolve('%s/ksolve' % compt.path)
 
         stoich = moose.Stoich('%s/stoich' % compt.path)
         # NOTE: must be set before compartment or path.
-        assert s
         stoich.compartment = compt
         stoich.ksolve = s
         stoich.path = '%s/##' % compt.path
