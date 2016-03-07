@@ -335,14 +335,18 @@ class DotModel():
         # NOTE: When using function, one needs to use numKf/numKb instead of
         # Kf/Kb.
         try:
-            if field in [ 'kf', 'kb' ]:
-                setF = field[0].upper() + field[1:]
-            elif field in [ 'numKf', 'numKb' ]:
-                setF = field 
             value = eval(str(expr))
-            reac.setField( setF, value )
-            assert reac.getField( setF ) == value, "Could not set reac value"
-
+            if field == 'kf':
+                reac.Kf = value
+            elif field == 'kb':
+                reac.Kb = value
+            elif field == 'numKf':
+                reac.numKf = value
+            elif field == 'numKb':
+                reac.numKb = value
+            else:
+                logger_.warn("Unknown field %s for reaction" % field)
+                logger_.warn(' Ignored!' )
             logger_.debug("|=  Rate expression for %s is %f" % (field, value))
             return True
         except Exception as e:
