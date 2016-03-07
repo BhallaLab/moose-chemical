@@ -336,14 +336,10 @@ class DotModel():
         # Kf/Kb.
         try:
             value = eval(str(expr))
-            if field == 'kf':
-                reac.Kf = value
-            elif field == 'kb':
-                reac.Kb = value
-            elif field == 'numKf':
-                reac.numKf = value
-            elif field == 'numKb':
-                reac.numKb = value
+            if field == 'kf': reac.Kf = value
+            elif field == 'kb': reac.Kb = value
+            elif field == 'numKf': reac.numKf = value
+            elif field == 'numKb': reac.numKb = value
             else:
                 logger_.warn("Unknown field %s for reaction" % field)
                 logger_.warn(' Ignored!' )
@@ -355,8 +351,8 @@ class DotModel():
             rateFunc = moose.Function(funcPath)
             self.add_expr_to_function(expr, rateFunc, constants=constants)
             rateFunc.mode = 1
-            # NOTE: setting up Kf is not allowed, one can only set numKf and numKb.
-            # Also one has to be careful about the volume. 
+            # NOTE: setting up Kf is not encouraged because this leads to
+            # scaling effects in small volumes.
             setField = 'set' + field[0].upper() + field[1:]
             logger_.debug("||WRITE| %s.valueOut --> %s.%s" % (rateFunc, reac, field))
             moose.connect(rateFunc, 'valueOut', reac, setField) 
@@ -389,6 +385,7 @@ class DotModel():
         reac = moose.Reac('%s/%s' % (compt.path, node))
         self.G.node[node]['reaction'] = reac
 
+
         for sub, tgt in self.G.in_edges(node):
             logger_.debug("|REACTION| Adding sub to reac: %s" % sub)
             moose.connect(reac, 'sub', self.molecules[sub], 'reac')
@@ -398,6 +395,8 @@ class DotModel():
             moose.connect(reac, 'prd', self.molecules[tgt], 'reac')
             prds.append( tgt )
 
+        # NOTE: Potentially a bug. The reaction attributes must be added after
+        # subs and prds are added.
         self.add_reaction_attr(reac, attr)
 
         logger_.info("Added reaction {name}: {subs} <== {kb}, {kf} ==> {prds}".format( 
