@@ -341,6 +341,8 @@ class DotModel():
                 setF = field 
             value = eval(str(expr))
             reac.setField( setF, value )
+            assert reac.getField( setF ) == value, "Could not set reac value"
+
             logger_.debug("|=  Rate expression for %s is %f" % (field, value))
             return True
         except Exception as e:
@@ -356,8 +358,8 @@ class DotModel():
             moose.connect(forwardExprFunc, 'valueOut', reac, setField) 
             return True
         except Exception as e:
-            pu.info("Failed to set %s to %s" % (field, expr))
-            pu.info("Error was %s" % e)
+            logger_.warn("Failed to set %s to %s" % (field, expr))
+            logger_.warn(" Error was %s" % e)
             sys.exit(-1)
 
     def add_reaction_attr(self, reac, attr):
@@ -368,14 +370,14 @@ class DotModel():
         elif 'kf' in attr:
             self.add_rate_expr( reac, 'kf', attr['kf'], attr)
         else: 
-            pu.warn('Expecting kf of numKf in paramters. Check your reaction!')
+            logger_.warn('Expecting kf or numKf in paramters. Check your reaction!')
 
         if 'numKb' in attr:
             self.add_rate_expr( reac, 'numKb', attr['numKb'], attr)
         elif 'kb' in attr:
             self.add_rate_expr( reac, 'kb', attr['kb'], attr )
         else:
-            pu.warn('Expecting kb of numKb in paramters. Check your reaction!')
+            logger_.warn('Expecting kb or numKb in paramters. Check your reaction!')
 
     def add_reaction(self, node, compt):
         """Add a reaction node to MOOSE"""
