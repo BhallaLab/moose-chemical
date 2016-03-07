@@ -465,8 +465,7 @@ class DotModel():
             s.useClockedUpdate = True
         else:
             msg = "Unknown solver: %s. Using 'deterministic' solver." % solver
-            msg += "\n Supported solvers: 'stochastic' and 'deterministic'
-            (default)'"
+            msg += "\n Choices: 'stochastic' and 'deterministic' (default)'"
             pu.warn(msg)
             s = moose.Ksolve('%s/ksolve' % compt.path)
 
