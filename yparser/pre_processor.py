@@ -24,6 +24,7 @@ from math import *
 # These are the keys which will/might have a complicated expression on them.
 keys_with_expressions_ = [ 'kf', 'kb', 'numKf', 'numKb', 'N', 'conc' ]
 global_expr_g_ = nx.DiGraph( )
+globals_ = None
 
 def get_identifiers( syntax_tree ):
     idents = set()
@@ -148,7 +149,7 @@ def reduce_node_expr( n, network):
     """
 
     global keys_with_expressions_ 
-    globals_ = network.graph['graph']
+    global globals_
 
     attr = network.node[n]
     # Create the expression graph.
@@ -243,10 +244,9 @@ def reduce_key_val_on_node( key, val, expr_graph, network):
     return val
 
 
-
 def compute_volume( network ):
     """Compute the volume of compartment """
-    globals_ = network.graph['graph']
+    global globals_
     if 'geometry' in globals_:
         if globals_['geometry'] == 'cylinder':
             r = eval(globals_['radius'])
@@ -257,13 +257,29 @@ def compute_volume( network ):
             assert globals_.get('volume',False), msg
     logger_.info('Volume of compartment : %s' % globals_['volume'])
 
+def deduce_missing_paramters( network ):
+    """deduce_missing_paramters Some parameters requires other paramters to be
+    set. Enable them.
+
+    :param network:
+    """
+    global globals_
+    if 'diffusion_length' in globals_:
+        logger_.info("Diffusion length found. Enabling diffusion in this compartment")
+        logger_.info("I'll assign diffusion constant to be 1 on Pool")
+        globals_['diffusion_enabled'] = 'true'
+    else:
+        logger_.info("This compartment does not support diffusion")
                 
 def pre_process( network ):
     """ Pre-process the graph in a way that all subtitutions are made.
     In all key = val, val should be string type.
     """
     global global_expr_g_
+    global globals_
+    globals_ = network.graph['graph']
     compute_volume( network )
+    deduce_missing_paramters( network )
     build_global_expression_graph( network )
     flatten_global_expressions( network )
 

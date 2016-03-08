@@ -91,7 +91,7 @@ class DotModel():
         if moose.exists( self.comptPath ):
             logger_.warn(' Compartment (%s) already exist' % self.comptPath )
             return moose.element( self.comptPath )
-        if self.globals_.get('geometry', 'cylinder').lower() == 'cube':
+        if self.globals_.get('geometry', 'cube').lower() == 'cube':
             logger_.info("Creating cubical compartment")
             curCompt =  moose.CubeMesh( self.comptPath )
             curCompt.volume = eval(self.globals_['volume'])
@@ -109,7 +109,13 @@ class DotModel():
                 logger_.fatal( 'Failed to find either "length" or "x0" and "x1"'
                         ' in your model. '
                         )
-            curCompt.diffLength = eval(self.globals_.get('diff_length', '0.2'))
+            curCompt.diffLength = eval(self.globals_.get('diffusion_length', '0.2'))
+            logger_.debug( "x0 = %s, x1 = %s, r0 = %s, r1 = %s" % ( curCompt.x0
+                , curCompt.x1
+                , curCompt.r0
+                , curCompt.r1
+                ))
+            logger_.debug( "Diffusion length : %s" % curCompt.diffLength )
         return curCompt
 
 
