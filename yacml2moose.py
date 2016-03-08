@@ -99,9 +99,9 @@ class DotModel():
             logger_.info("Creating cylinderical compartment")
             curCompt = moose.CylMesh( self.comptPath )
             curCompt.r0 = curCompt.r1 = eval(self.globals_['radius'])
-            if 'lenght' in self.globals_:
+            if 'length' in self.globals_:
                 curCompt.x0 = 0.0
-                curCompt.x1 = self.globals_['length']
+                curCompt.x1 = eval(self.globals_['length'])
             elif 'x0' in self.globals_ and 'x1' in globals_:
                 curCompt.x0 = eval(self.globals_['x0'])
                 curCompt.x1 = eval(self.globals_['x1'])
