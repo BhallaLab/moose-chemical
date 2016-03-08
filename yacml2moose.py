@@ -1,6 +1,7 @@
 """chemviz.py
 
-    load YACML.
+TODO: Should be renamed.
+
 """
     
 __author__           = "Dilawar Singh"
@@ -69,8 +70,10 @@ class DotModel():
         self.kinetics = {}
         self.functions = {}
         self.poolPath = None
-        self.modelPath = '/model'
-        self.funcPath = '/model/functions'
+        self.rootPath = '/model'
+        moose.Neutral( self.rootPath )
+        self.comptPath = '%s/%s' % (self.rootPath, self.G.name)
+        self.funcPath = '%s' % self.comptPath
         self.variables = {}
         self.tables = {}
         self.nodes_with_tests = []
@@ -80,33 +83,29 @@ class DotModel():
         # Finally load the model
         self.load()
 
-    def create_compartment( self, compt_name ):
+    def create_compartment( self ):
         """Create a compartment with given geomtry. If none given, use
         cylinderical
         """
-        comptpath = '%s/%s' % (self.modelPath, compt_name)
+        if moose.exists( self.comptPath ):
+            logger_.warn(' Compartment (%s) already exist' % self.comptPath )
         if self.globals_.get('geometry', 'cylinder').lower() == 'cube':
             logger_.info("Creating cubical compartment")
-            curCompt =  moose.CubeMesh( comptpath )
+            curCompt =  moose.CubeMesh( self.comptPath )
         else:
             logger_.info("Creating cylinderical (default) compartment")
-            curCompt = moose.CylMesh( comptpath )
+            curCompt = moose.CylMesh( self.comptPath )
         curCompt.volume = float(self.globals_['volume'])
         return curCompt
 
 
     def init_moose(self, compt):
         """Initialize paths in MOOSE"""
-        for path in [self.modelPath, self.funcPath]:
+
+        for path in [self.rootPath, self.funcPath]:
             moose.Neutral(path)
 
-        comptName = str(self.G)
-        curCompt = None
-        if compt is None:
-            curCompt = self.create_compartment( comptName )
-        else: 
-            curCompt = compt
-
+        curCompt = self.create_compartment( )
         self.compartments[comptName] = curCompt
         self.poolPath = curCompt.path
         self.__cwd__ = curCompt.path
@@ -644,11 +643,6 @@ class DotModel():
             outfile = kwargs['outfile']
 
         mu.saveRecords(self.tables, outfile =  outfile )
-
-def writeSBMLModel(dot_file, outfile = None):
-    model = DotModel(dot_file)
-    model.createNetwork()
-    model.writeSBML(outfile)
 
 def main():
     pass

@@ -12,7 +12,7 @@ __email__            = "dilawars@ncbs.res.in"
 __status__           = "Development"
 
 
-import chemviz
+import yacml2moose
 import config
 import moose.utils as mu
 from yparser import yparser
@@ -20,21 +20,28 @@ from yparser import pre_processor
 
 logger_ = config.logger_
 
-def loadYACML(modelFile, **kwargs):
+def loadYACML(yacml_file, **kwargs):
     """loadYACML Load YACML model into MOOSE.
 
     :param modelFile: Path of model.
     :param **kwargs:
     """
-
-    networkxG = yparser.create_graph( modelFile )
-
-    # Pre-process the expressions on graph.
-    pre_processor.pre_process( networkxG )
-
+    networkxG = yacml_to_networkx( yacml_file )
     # Once graph is preprocess, load it in moose.
-    model = chemviz.DotModel( networkxG )
+    model = yacml2moose.DotModel( networkxG )
+    return model
 
+def yacml_to_networkx( yacml_file ):
+    """yacml_to_networkx Convert yacml model to equivalent networkx graph.
+
+    :param yacml_file: path of yacml file.
+    """
+    nxG = yparser.create_graph( yacml_file )
+    pre_processor.pre_process( nxG )
+    return nxG
+
+def load_networkx_in_moose( nxg ):
+    model = yacml2moose.DotModle( nxg )
     return model
 
 def main(args):
@@ -43,7 +50,7 @@ def main(args):
     config.args_ = args
     modelFile = args['model_file']
     if args['solver'] == 'moose':
-        model = chemviz.DotModel(modelFile)
+        model = yacml2moose.DotModel(modelFile)
         model.run(args)
         return model
     elif args['solver'] == "scipy":
