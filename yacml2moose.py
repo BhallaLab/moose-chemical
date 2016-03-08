@@ -1,11 +1,11 @@
-"""chemviz.py
+"""yacml2moose.py
 
-TODO: Should be renamed.
+Load YACML model into MOOSE simulator.
 
 """
     
 __author__           = "Dilawar Singh"
-__copyright__        = "Copyright 2015, Dilawar Singh and NCBS Bangalore"
+__copyright__        = "Copyright 2016, Dilawar Singh"
 __credits__          = ["NCBS Bangalore"]
 __license__          = "GNU GPL"
 __version__          = "1.0.0"
@@ -14,6 +14,7 @@ __email__            = "dilawars@ncbs.res.in"
 __status__           = "Development"
 
 
+import math
 import networkx.drawing.nx_agraph as nxAG
 import networkx as nx
 import moose
@@ -73,7 +74,7 @@ class DotModel():
         self.rootPath = '/model'
         moose.Neutral( self.rootPath )
         self.comptPath = '%s/%s' % (self.rootPath, self.G.name)
-        self.funcPath = '%s' % self.comptPath
+        self.funcPath = '%s/functions' % self.comptPath
         self.variables = {}
         self.tables = {}
         self.nodes_with_tests = []
@@ -89,24 +90,36 @@ class DotModel():
         """
         if moose.exists( self.comptPath ):
             logger_.warn(' Compartment (%s) already exist' % self.comptPath )
+            return moose.element( self.comptPath )
         if self.globals_.get('geometry', 'cylinder').lower() == 'cube':
             logger_.info("Creating cubical compartment")
             curCompt =  moose.CubeMesh( self.comptPath )
+            curCompt.volume = eval(self.globals_['volume'])
         else:
-            logger_.info("Creating cylinderical (default) compartment")
+            logger_.info("Creating cylinderical compartment")
             curCompt = moose.CylMesh( self.comptPath )
-        curCompt.volume = float(self.globals_['volume'])
+            curCompt.r0 = curCompt.r1 = eval(self.globals_['radius'])
+            if 'lenght' in self.globals_:
+                curCompt.x0 = 0.0
+                curCompt.x1 = self.globals_['length']
+            elif 'x0' in self.globals_ and 'x1' in globals_:
+                curCompt.x0 = eval(self.globals_['x0'])
+                curCompt.x1 = eval(self.globals_['x1'])
+            else:
+                logger_.fatal( 'Failed to find either "length" or "x0" and "x1"'
+                        ' in your model. '
+                        )
+            curCompt.diffLength = eval(self.globals_.get('diff_length', '0.2'))
         return curCompt
 
 
     def init_moose(self, compt):
         """Initialize paths in MOOSE"""
 
-        for path in [self.rootPath, self.funcPath]:
-            moose.Neutral(path)
-
         curCompt = self.create_compartment( )
-        self.compartments[comptName] = curCompt
+        for path in [self.funcPath]:
+            moose.Neutral(path)
+        self.compartments[self.G.name] = curCompt
         self.poolPath = curCompt.path
         self.__cwd__ = curCompt.path
         self.__cur_compt__ = curCompt
@@ -121,9 +134,6 @@ class DotModel():
                 if "test" in k: 
                     self.G.node[n]['do_test'] = "true"
             self.attach_type(n)
-
-        logger_.info("Reactions = {0}, Pools(buffered) = {1}({2})".format(
-            self.nreac , self.npools , self.nbufpool))
 
     def attach_type(self, n):
         """This function attach types to node 'n' of graph"""

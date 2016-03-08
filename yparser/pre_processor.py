@@ -241,12 +241,29 @@ def reduce_key_val_on_node( key, val, expr_graph, network):
     msg += ', NEW = %s' % val
     logger_.info(msg)
     return val
+
+
+
+def compute_volume( network ):
+    """Compute the volume of compartment """
+    globals_ = network.graph['graph']
+    if 'geometry' in globals_:
+        if globals_['geometry'] == 'cylinder':
+            r = eval(globals_['radius'])
+            l = eval(globals_['length'])
+            globals_['volume'] = str( pi * r * r * l )
+        else:
+            msg = 'For geometry %s, you must assign a volume' % globals_['geometry']
+            assert globals_.get('volume',False), msg
+    logger_.info('Volume of compartment : %s' % globals_['volume'])
+
                 
 def pre_process( network ):
     """ Pre-process the graph in a way that all subtitutions are made.
     In all key = val, val should be string type.
     """
     global global_expr_g_
+    compute_volume( network )
     build_global_expression_graph( network )
     flatten_global_expressions( network )
 
