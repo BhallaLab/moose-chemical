@@ -79,6 +79,7 @@ class DotModel():
         self.tables = {}
         self.nodes_with_tests = []
         self.compartments = {}
+        self.solver = None
         self.__cwd__ = ""
         self.__cur_compt__ = None
         # Finally load the model
@@ -489,6 +490,7 @@ class DotModel():
         stoich.compartment = compt
         stoich.ksolve = s
         stoich.path = '%s/##' % compt.path
+        self.solver = stoich
 
     def add_pool(self, molecule, compt):
         """Add a moose.Pool for a given molecule. DO NOT ADD parameters to pool
