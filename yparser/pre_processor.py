@@ -120,6 +120,7 @@ def flatten_expression_on_node( x, g ):
     msg = "NODE %s, EXPR=%s" % (x, expr)
     if g.node[x].get('reduced', ''):
         logger_.debug("|NODE %s| Expression on node is already reduced" % x)
+        logger_.debug("   to %s" % g.node[x]['reduced'] )
         return g.node[x]['reduced']
 
     for xx in g.successors(x):

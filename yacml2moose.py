@@ -631,7 +631,7 @@ class DotModel():
 
         # get dt from chemviz file
         if self.G.graph['graph'].get('solver', 'ksolve') == 'ksolve':
-            dt = eval(self.G.graph['graph'].get('dt', 0.01))
+            dt = eval(self.G.graph['graph'].get('dt', '0.01'))
             pu.info("Using dt=%s for all chemical process" % dt)
             for i in range(10, 16):
                 moose.setClock(i, dt)
