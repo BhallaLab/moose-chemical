@@ -26,7 +26,7 @@ def yacml_to_dot( yacml_text ):
     gvText = yacml_text.replace( 'compartment', 'digraph' )
     return gvText
 
-def create_graph( yacml_file ):
+def create_graph( yacml_file, **kwargs ):
     logger_.info("Parsing %s to create netowrkx graph" % yacml_file)
     # Create a temporary file to convert the yacml file to dot file. After this,
     # parser the dot file to generate the graph.

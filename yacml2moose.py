@@ -56,10 +56,22 @@ def get_path_of_node(moose_compt, name):
 class DotModel():
     '''
     Parse graphviz file and populate a chemical model in MOOSE.
+
     '''
 
-    def __init__(self, G):
+    def __init__(self, G, section = 0, **kwargs):
+        """__init__
+
+        :param G: networkx graph representing model
+        :param prefix: Prefix for each entitiy inside this graph. Very useful if
+        you want to load this model more than 1 times in the very same
+        compartment. Different prefix value in each call make sure that entities
+        are not replaced.
+        :param **kwargs:
+            optional.
+        """
         self.G = G
+        self.options = kwargs
         self.globals_ = self.G.graph['graph']
         self.filename = self.globals_['filename']
         self.molecules = {}
@@ -80,10 +92,20 @@ class DotModel():
         self.nodes_with_tests = []
         self.compartments = {}
         self.solver = None
+        self.compartment = None
         self.__cwd__ = ""
         self.__cur_compt__ = None
+        self.__prefix__ = '%s' % section
         # Finally load the model
         self.load()
+
+    def prefixed_path( self, identifier ):
+        """prefixed Prefix the given indentifier with compartment prefix
+
+        :param identifier:
+        """
+        return "%s/%s/%s" % (self.comptPath,  self.__prefix__, identifier)
+
 
     def create_compartment( self ):
         """Create a compartment with given geomtry. If none given, use
@@ -91,7 +113,7 @@ class DotModel():
         """
         if moose.exists( self.comptPath ):
             logger_.warn(' Compartment (%s) already exist' % self.comptPath )
-            return moose.element( self.comptPath )
+            return moose.Neutral( self.comptPath )
         if self.globals_.get('geometry', 'cube').lower() == 'cube':
             logger_.info("Creating cubical compartment")
             curCompt =  moose.CubeMesh( self.comptPath )
@@ -100,23 +122,19 @@ class DotModel():
             logger_.info("Creating cylinderical compartment")
             curCompt = moose.CylMesh( self.comptPath )
             curCompt.r0 = curCompt.r1 = eval(self.globals_['radius'])
-            if 'length' in self.globals_:
-                curCompt.x0 = 0.0
-                curCompt.x1 = eval(self.globals_['length'])
-            elif 'x0' in self.globals_ and 'x1' in globals_:
-                curCompt.x0 = eval(self.globals_['x0'])
-                curCompt.x1 = eval(self.globals_['x1'])
-            else:
-                logger_.fatal( 'Failed to find either "length" or "x0" and "x1"'
-                        ' in your model. '
-                        )
             curCompt.diffLength = eval(self.globals_.get('diffusion_length', '0.2'))
-            logger_.debug( "x0 = %s, x1 = %s, r0 = %s, r1 = %s" % ( curCompt.x0
-                , curCompt.x1
-                , curCompt.r0
-                , curCompt.r1
-                ))
             logger_.debug( "Diffusion length : %s" % curCompt.diffLength )
+
+        if 'length' in self.globals_:
+            curCompt.x0 = 0.0
+            curCompt.x1 = eval(self.globals_['length'])
+        elif 'x0' in self.globals_ and 'x1' in globals_:
+            curCompt.x0 = eval(self.globals_['x0'])
+            curCompt.x1 = eval(self.globals_['x1'])
+        else:
+            logger_.fatal( 'Failed to find either "length" or "x0" and "x1"'
+                    ' in your model. '
+                        )
         return curCompt
 
 
@@ -124,16 +142,22 @@ class DotModel():
         """Initialize paths in MOOSE"""
 
         curCompt = self.create_compartment( )
+        moose.Neutral( '%s/%s' % (curCompt.path, self.__prefix__ ) )
         for path in [self.funcPath]:
             moose.Neutral(path)
         self.compartments[self.G.name] = curCompt
         self.poolPath = curCompt.path
         self.__cwd__ = curCompt.path
         self.__cur_compt__ = curCompt
+        self.compartment = curCompt
 
     def initialize_graph(self):
         """Initialize a given graph 
         """
+        for n in self.G.nodes():
+            self.G.node[n]['label'] = n 
+            self.G.node[n]['path'] = self.prefixed_path( n )
+
         for n in self.G.nodes():
             attr = self.G.node[n]
             self.G.node[n]['do_test'] = "false"
@@ -501,14 +525,13 @@ class DotModel():
         logger_.info("Adding molecule %s as moose.Pool" % molecule)
         moleculeDict = self.G.node[molecule]
         logger_.debug("|- %s" % moleculeDict)
-        poolPath = '{}/{}'.format(compt.path, molecule)
-        p = moose.Pool(poolPath)
+        p = moose.Pool( self.G.node[molecule]['path'] )
         return p
 
     def add_bufpool(self, molecule, compt):
         """Add a moose.BufPool to moose for a given molecule """
         logger_.info("Adding molecule %s as moose.BufPool" % molecule)
-        poolPath = get_path_of_node(compt, molecule)
+        poolPath = self.G.node[molecule]['path'] #get_path_of_node(compt, molecule)
         moleculeDict = self.G.node[molecule]
         logger_.debug("|- %s" % moleculeDict)
         p = moose.BufPool(poolPath)
@@ -612,7 +635,7 @@ class DotModel():
         tablePath = '/%s/table_%s_%s' % (moose_elem.path, elem, field)
         tab = moose.Table2(tablePath)
         moose.connect(tab, 'requestOut', moose_elem, 'get' + field[0].upper() + field[1:])
-        self.tables["%s.%s" % (elem, field)] = tab
+        self.tables["%s/%s.%s" % (self.__prefix__, elem, field)] = tab
         try:
             self.G.node[elem]['%s_table' % field] = tab
         except:

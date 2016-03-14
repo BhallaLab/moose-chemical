@@ -28,20 +28,20 @@ def loadYACML(yacml_file, **kwargs):
     """
     networkxG = yacml_to_networkx( yacml_file )
     # Once graph is preprocess, load it in moose.
-    model = networkx2moose( networkxG )
+    model = networkx2moose( networkxG, **kwargs)
     return model
 
-def yacml_to_networkx( yacml_file ):
+def yacml_to_networkx( yacml_file, **kwargs ):
     """yacml_to_networkx Convert yacml model to equivalent networkx graph.
 
     :param yacml_file: path of yacml file.
     """
-    nxG = yparser.create_graph( yacml_file )
+    nxG = yparser.create_graph( yacml_file, **kwargs )
     pre_processor.pre_process( nxG )
     return nxG
 
-def networkx2moose( nxg ):
-    model = yacml2moose.DotModel( nxg )
+def networkx2moose( nxg, **kwargs ):
+    model = yacml2moose.DotModel( nxg, **kwargs )
     return model
 
 def main(args):
