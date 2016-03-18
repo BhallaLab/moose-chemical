@@ -22,7 +22,8 @@ import networkx as nx
 from math import *
 
 # These are the keys which will/might have a complicated expression on them.
-keys_with_expressions_ = [ 'kf', 'kb', 'numKf', 'numKb', 'N', 'conc' ]
+keys_with_expressions_ = [ 'kf', 'kb', 'numKf', 'numKb', 'N', 'conc',
+        'diffusion_constant' ]
 global_expr_g_ = nx.DiGraph( )
 globals_ = None
 
@@ -268,8 +269,9 @@ def deduce_missing_paramters( network ):
     if 'diffusion_length' in globals_:
         logger_.info("Diffusion length found. Enabling diffusion in this compartment")
         logger_.info("I'll assign diffusion constant to be 1 on Pool")
-        globals_['diffusion_enabled'] = 'true'
+        globals_['enable_diffusion'] = 'true'
     else:
+        globals_['enable_diffusion'] = 'false'
         logger_.info("This compartment does not support diffusion")
                 
 def pre_process( network ):

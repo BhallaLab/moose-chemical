@@ -83,7 +83,7 @@ class DotModel():
         self.kinetics = {}
         self.functions = {}
         self.poolPath = None
-        self.rootPath = '/model'
+        self.rootPath = '/yacml'
         moose.Neutral( self.rootPath )
         self.comptPath = '%s/%s' % (self.rootPath, self.G.name)
         self.funcPath = '%s/functions' % self.comptPath
@@ -122,8 +122,9 @@ class DotModel():
             logger_.info("Creating cylinderical compartment")
             curCompt = moose.CylMesh( self.comptPath )
             curCompt.r0 = curCompt.r1 = eval(self.globals_['radius'])
-            curCompt.diffLength = eval(self.globals_.get('diffusion_length', '0.2'))
-            logger_.debug( "Diffusion length : %s" % curCompt.diffLength )
+
+        curCompt.diffLength = eval(self.globals_.get('diffusion_length', '1.0'))
+        logger_.info( "Diffusion length : %s" % curCompt.diffLength )
 
         if 'length' in self.globals_:
             curCompt.x0 = 0.0
@@ -132,7 +133,7 @@ class DotModel():
             curCompt.x0 = eval(self.globals_['x0'])
             curCompt.x1 = eval(self.globals_['x1'])
         else:
-            logger_.fatal( 'Failed to find either "length" or "x0" and "x1"'
+            logger_.fatal( 'Failed to find either "length" or "r0" and "r1"'
                     ' in your model. '
                         )
         return curCompt
@@ -422,7 +423,7 @@ class DotModel():
         subs, prds = [], []
 
         logger_.debug("|REACTION| With attribs %s:" % attr)
-        reac = moose.Reac('%s/%s' % (compt.path, node))
+        reac = moose.Reac( self.G.node[node]['path'] )
         self.G.node[node]['reaction'] = reac
 
 
@@ -482,8 +483,16 @@ class DotModel():
         graph/subgraph.
 
         """
-        solver = self.G.graph['graph'].get('solver', 'deterministic')
-        self.setup_solver(solver.lower(), self.__cur_compt__)
+
+        solver = self.G.graph['graph'].get('solver')
+        if solver:
+            self.setup_solver(solver.lower(), self.__cur_compt__)
+        else:
+            mu.warn( [ 
+                "You did not specify a solver!"
+                , "May be you want to set it up later. Otherwise I'll use default"
+                ] )
+        return None
 
 
     def setup_solver(self, solver, compt, **kwargs):
@@ -492,7 +501,18 @@ class DotModel():
 
         :param reac: moose.Reaction element.
         :param solver: Type of solver i.e. ksolve/gsolve, string.
+
         """
+
+        # If solver already exists in this compartment, do not add another
+        # solver. This is useful when more than one sections are added to
+        # compartment.
+        solverPath = '%s/stoich' % compt.path
+        if moose.exists( solverPath ):
+            pu.warn("I've already added a solver on comparment %s" % compt.name)
+            pu.warn("I won't add another solver. This usually causes segfaults")
+            return moose.Stoich( solverPath )
+
         pu.info("Adding a solver %s to compartment %s" % (solver, compt.path))
         s = None
         if solver == "deterministic":
@@ -501,7 +521,7 @@ class DotModel():
         elif solver == 'stochastic':
             pu.info('Using stochastic solver')
             s = moose.Gsolve('%s/gsolve' % compt.path)
-            pu.info("Setting up useClockedUpdate = True")
+            pu.info("Setting 'useClockedUpdate = True'; Honors function events.")
             s.useClockedUpdate = True
         else:
             msg = "Unknown solver: %s. Using 'deterministic' solver." % solver
@@ -509,12 +529,25 @@ class DotModel():
             pu.warn(msg)
             s = moose.Ksolve('%s/ksolve' % compt.path)
 
+        # If diffusion is enabled, then setup a solver to handle diffusion
+        if 'enable_diffusion' in self.globals_:
+            pu.info( 'Setting up solver to handle diffusion' )
+            dsolvePath = '%s/dsolve' % compt.path
+            if moose.exists( dsolvePath ):
+                mu.warn( 'Already exists %s. Doing nothing. ' % dsolvePath )
+            else:
+                dsolve = moose.Dsolve( '%s/dsolve' % compt.path )
+
         stoich = moose.Stoich('%s/stoich' % compt.path)
         # NOTE: must be set before compartment or path.
         stoich.compartment = compt
         stoich.ksolve = s
+        if 'enable_diffusion' in self.globals_:
+            stoich.dsolve = dsolve
+
         stoich.path = '%s/##' % compt.path
         self.solver = stoich
+        return stoich
 
     def add_pool(self, molecule, compt):
         """Add a moose.Pool for a given molecule. DO NOT ADD parameters to pool
@@ -522,19 +555,27 @@ class DotModel():
         not yet added. This is like Forward Declaration.
         """
 
-        logger_.info("Adding molecule %s as moose.Pool" % molecule)
         moleculeDict = self.G.node[molecule]
         logger_.debug("|- %s" % moleculeDict)
         p = moose.Pool( self.G.node[molecule]['path'] )
+        p.diffConst = eval( 
+                self.G.node[molecule].get('diffusion_constant', '0.0')
+                )
+        logger_.info("Added  %s (diffusion_constant=%s) as moose.Pool" % (
+            molecule, p.diffConst ))
         return p
 
     def add_bufpool(self, molecule, compt):
         """Add a moose.BufPool to moose for a given molecule """
-        logger_.info("Adding molecule %s as moose.BufPool" % molecule)
         poolPath = self.G.node[molecule]['path'] #get_path_of_node(compt, molecule)
         moleculeDict = self.G.node[molecule]
         logger_.debug("|- %s" % moleculeDict)
         p = moose.BufPool(poolPath)
+        p.diffConst = eval( 
+                self.G.node[molecule].get('diffusion_constant', '0.0')
+                )
+        logger_.info("Added  %s (diffusion_constant=%s) as moose.BufPool" % (
+            molecule, p.diffConst ))
         return p
 
     def add_parameters_to_var(self, variable):

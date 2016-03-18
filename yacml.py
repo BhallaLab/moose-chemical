@@ -14,7 +14,8 @@ __status__           = "Development"
 
 import yacml2moose
 import config
-import moose.utils as mu
+import moose.print_utils as pu
+import moose
 from yparser import yparser
 from yparser import pre_processor
 
@@ -43,6 +44,48 @@ def yacml_to_networkx( yacml_file, **kwargs ):
 def networkx2moose( nxg, **kwargs ):
     model = yacml2moose.DotModel( nxg, **kwargs )
     return model
+
+def setup_solver( compartment, solver, **kwargs ):
+    """setup_solver Use a given solver 'solver' on compartment 'compartment'
+
+    :param compartment: moose.Compartment type.
+    :param solver: deterministic or stochastic
+    :param **kwargs: TODO
+    """
+    pu.info("Adding a solver %s to compartment %s" % (solver, compartment.path))
+    s = None
+    if solver == "deterministic":
+        pu.info('[INFO] Using deterministic solver')
+        s = moose.Ksolve('%s/ksolve' % compartment.path)
+    elif solver == 'stochastic':
+        pu.info('Using stochastic solver')
+        s = moose.Gsolve('%s/gsolve' % compartment.path)
+        pu.info("Setting up useClockedUpdate = True")
+        s.useClockedUpdate = True
+    else:
+        msg = "Unknown solver: %s. Using 'deterministic' solver." % solver
+        msg += "\n Choices: 'stochastic' and 'deterministic' (default)'"
+        pu.warn(msg)
+        s = moose.Ksolve('%s/ksolve' % compartment.path)
+
+    if  kwargs.get( 'enable_diffusion', False):
+        pu.info( 'Setting up diffusion solver' )
+        dsolvePath = '%s/dsolve' % compartment.path
+        if moose.exists( dsolvePath ):
+            mu.warn( 'Already exists %s. Doing nothing. ' % dsolvePath )
+        else:
+            dsolve = moose.Dsolve( '%s/dsolve' % compartment.path )
+
+    stoich = moose.Stoich('%s/stoich' % compartment.path)
+    # NOTE: must be set before compartment or path.
+    stoich.compartment = compartment
+    stoich.ksolve = s
+    if kwargs.get( 'enable_diffusion', False):
+        pu.info('Added diffusion solver')
+        stoich.dsolve = dsolve
+    stoich.path = '%s/##' % compartment.path
+    return stoich
+
 
 def main(args):
     """Main entry function
