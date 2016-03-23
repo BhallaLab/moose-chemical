@@ -54,6 +54,12 @@ def setup_solver( compartment, solver, **kwargs ):
     """
     pu.info("Adding a solver %s to compartment %s" % (solver, compartment.path))
     s = None
+    enableDiffusion = kwargs.get('enable_diffusion', False)
+
+    if enableDiffusion:
+        pu.info('Diffusion in compartment %s is enabled' % compartment.name )
+
+
     if solver == "deterministic":
         pu.info('[INFO] Using deterministic solver')
         s = moose.Ksolve('%s/ksolve' % compartment.path)
@@ -68,7 +74,7 @@ def setup_solver( compartment, solver, **kwargs ):
         pu.warn(msg)
         s = moose.Ksolve('%s/ksolve' % compartment.path)
 
-    if  kwargs.get( 'enable_diffusion', False):
+    if enableDiffusion:
         pu.info( 'Setting up diffusion solver' )
         dsolvePath = '%s/dsolve' % compartment.path
         if moose.exists( dsolvePath ):
@@ -77,12 +83,13 @@ def setup_solver( compartment, solver, **kwargs ):
             dsolve = moose.Dsolve( '%s/dsolve' % compartment.path )
 
     stoich = moose.Stoich('%s/stoich' % compartment.path)
-    # NOTE: must be set before compartment or path.
-    stoich.compartment = compartment
     stoich.ksolve = s
-    if kwargs.get( 'enable_diffusion', False):
+    if enableDiffusion:
         pu.info('Added diffusion solver')
         stoich.dsolve = dsolve
+
+    # NOTE: must be set before compartment or path.
+    stoich.compartment = compartment
     stoich.path = '%s/##' % compartment.path
     return stoich
 
