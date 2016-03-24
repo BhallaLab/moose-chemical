@@ -87,6 +87,10 @@ def setup_solver( compartment, solver, **kwargs ):
     if enableDiffusion:
         pu.info('Added diffusion solver')
         stoich.dsolve = dsolve
+        compartment.diffLength = eval(kwargs.get('diffusion_length', '1.0'))
+        logger_.info( "Diffusion length : %s" % compartment.diffLength )
+        logger_.info( "Diffusion compartments : %s" % compartment.numDiffCompts )
+        assert compartment.numDiffCompts > 1, compartment.numDiffCompts
 
     # NOTE: must be set before compartment or path.
     stoich.compartment = compartment

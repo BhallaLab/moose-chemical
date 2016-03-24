@@ -123,7 +123,6 @@ class DotModel():
             curCompt = moose.CylMesh( self.comptPath )
             curCompt.r0 = curCompt.r1 = eval(self.globals_['radius'])
 
-
         if 'length' in self.globals_:
             curCompt.x0 = 0.0
             curCompt.x1 = eval(self.globals_['length'])
@@ -135,10 +134,7 @@ class DotModel():
                     ' in your model. '
                         )
         # Diffusion length can only be set after length is set
-        curCompt.diffLength = eval(self.globals_.get('diffusion_length', '1.0'))
-        logger_.info( "Diffusion length : %s" % curCompt.diffLength )
-        logger_.info( "Diffusion compartments : %s" % curCompt.numDiffCompts )
-        assert curCompt.numDiffCompts > 1, curCompt.numDiffCompts
+        # NOTE: Use it if only diffusion solver is used.
 
         return curCompt
 
