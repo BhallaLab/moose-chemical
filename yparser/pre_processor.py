@@ -268,10 +268,9 @@ def deduce_missing_paramters( network ):
     global globals_
     if 'diffusion_length' in globals_:
         logger_.info("Diffusion length found. Enabling diffusion in this compartment")
-        logger_.info("I'll assign diffusion constant to be 1 on Pool")
-        globals_['enable_diffusion'] = 'true'
+        globals_['enable_diffusion'] = True
     else:
-        globals_['enable_diffusion'] = 'false'
+        globals_['enable_diffusion'] = False
         logger_.info("This compartment does not support diffusion")
                 
 def pre_process( network ):

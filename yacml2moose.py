@@ -14,26 +14,35 @@ __email__            = "dilawars@ncbs.res.in"
 __status__           = "Development"
 
 
-import math
 import networkx.drawing.nx_agraph as nxAG
-import networkx as nx
 import moose
 import moose.print_utils as pu
 import moose.utils as mu
-import ast
 import re
 from utils import test_expr as te
 from utils import expression as _expr
 import notify as warn
 import config
-import operator as ops
-import sys
-from collections import defaultdict
-import tempfile
-import matplotlib.pyplot as plt
 from utils import typeclass as tc
-from utils.helper import *
+# from utils.helper import *
 logger_ = config.logger_
+
+def compt_info( compt ):
+    """Get the compartment info as string"""
+    info = ''
+    if isinstance( compt, moose.CubeMesh ):
+        info += 'Cube\n'
+        info += '\tx0, y0, z0 : %s, %s, %s\n' % (compt.x0, compt.y0, compt.z0)
+        info += '\tx1, y1, z1 : %s, %s, %s\n' % (compt.x1, compt.y1, compt.z1)
+        info += '\tvolume : %s' % compt.volume 
+    elif isinstance( compt, moose.CylMesh ):
+        info += 'Cylinder:\n'
+        info += '\tr0, r1 : %s, %s\n' % (compt.r0, compt.r1 )
+        info += '\tx0, y0, z0 : %s, %s, %s\n' % (compt.x0, compt.y0, compt.z0 )
+        info += '\tx1, y1, z1 : %s, %s, %s\n' % (compt.x1, compt.y1, compt.z1 )
+    else:
+        info += "Unknown/unsupported compartment type %s" % compt
+    return info
 
 def replace_in_expr(frm, to, expr):
     repExpr = re.compile(r'[\w]{0}[\w]'.format(frm))
@@ -106,35 +115,56 @@ class DotModel():
         """
         return "%s/%s/%s" % (self.comptPath,  self.__prefix__, identifier)
 
+    def assign_paramters_to_compartment( self, compt, **kwargs):
+        """assign_paramters_to_compartment Attach appropriate paramters to moose
+        compartment.
+
+        :param compt: moose compartment 
+        :param **kwargs: 
+        """
+
+        if 'length' in self.globals_:
+            compt.x0 = 0.0
+            compt.x1 = eval(self.globals_['length'])
+        elif 'x0' in self.globals_ and 'x1' in self.globals_:
+            compt.x0 = eval(self.globals_['x0'])
+            compt.x1 = eval(self.globals_['x1'])
+        else:
+            logger_.fatal( 'Failed to find either "length" or "x0" and "x1"'
+                    ' in your model. '
+                        )
+        if isinstance( compt, moose.CubeMesh ):
+            compt.volume = eval(self.globals_['volume'])
+        elif isinstance( compt, moose.CylMesh ):
+            if 'radius' in self.globals_:
+                compt.r0 = compt.r1 = eval(self.globals_['radius'])
+            elif 'r0' in self.globals_ and 'r1' in self.globals_:
+                compt.r0 = eval( self.globals_['r0'] )
+                compt.r1 = eval( self.globals_['r1'] )
+            else:
+                logger_.fatal( "Failed to find 'r0','r1' or 'length' in model")
+        else:
+            logger_.warn( "Unknown/unsupported compartment type %s" % compt )
+        logger_.info( compt_info( compt ) )
 
     def create_compartment( self ):
         """Create a compartment with given geomtry. If none given, use
         cylinderical
         """
+
+        curCompt = None
         if moose.exists( self.comptPath ):
             logger_.warn(' Compartment (%s) already exist' % self.comptPath )
             return moose.Neutral( self.comptPath )
         if self.globals_.get('geometry', 'cube').lower() == 'cube':
             logger_.info("Creating cubical compartment")
             curCompt =  moose.CubeMesh( self.comptPath )
-            curCompt.volume = eval(self.globals_['volume'])
         else:
             logger_.info("Creating cylinderical compartment")
             curCompt = moose.CylMesh( self.comptPath )
-            curCompt.r0 = curCompt.r1 = eval(self.globals_['radius'])
 
-        if 'length' in self.globals_:
-            curCompt.x0 = 0.0
-            curCompt.x1 = eval(self.globals_['length'])
-        elif 'x0' in self.globals_ and 'x1' in globals_:
-            curCompt.x0 = eval(self.globals_['x0'])
-            curCompt.x1 = eval(self.globals_['x1'])
-        else:
-            logger_.fatal( 'Failed to find either "length" or "r0" and "r1"'
-                    ' in your model. '
-                        )
-        # Diffusion length can only be set after length is set
-        # NOTE: Use it if only diffusion solver is used.
+        assert curCompt
+        self.assign_paramters_to_compartment( curCompt )
 
         return curCompt
 
@@ -219,7 +249,7 @@ class DotModel():
                 pass
 
         # NOTICE: Solvers are always set in the end.
-        self.setup_solvers()
+        self.setup_solver( self.compartment, **self.globals_)
 
         # Dump the edited graph into a temp file.
         outfile = '%s.dot' % self.filename
@@ -360,7 +390,7 @@ class DotModel():
             elif isinstance(elem, moose.Function):
                 f = 'valueOut'
             else:
-                raise UserWarning("Can't find the type of source elem %" % elem)
+                raise UserWarning("Can't find type of source elem %s" % elem)
             logger_.debug("|READ| %s.%s <-- %s.%s" % (func.path, k, transDict[k].path, f))
             try:
                 moose.connect(transDict[k], f, func.x[i], 'input')
@@ -476,77 +506,64 @@ class DotModel():
             logger_.debug("Adding prd to enz-reac: %s" % tgt)
             moose.connect(mooseEnz, 'prd', self.molecules[tgt], 'reac')
 
-    def setup_solvers(self):
-        """setup_solvers Add solvers after model is loaded. 
+    @staticmethod 
+    def setup_solver( compartment,  **kwargs ):
+        """setup_solver Use a given solver 'solver' on compartment 'compartment'
 
-        One compartment can only have one solver, so its a property of
-        graph/subgraph.
+        :param compartment: moose.Compartment type.
+        :param **kwargs: TODO
 
+            solver : 'deterministic' or 'stochastic'
         """
 
-        solver = self.G.graph['graph'].get('solver')
-        if solver:
-            self.setup_solver(solver.lower(), self.__cur_compt__)
-        else:
-            mu.warn( [ 
-                "You did not specify a solver!"
-                , "May be you want to set it up later. Otherwise I'll use default"
-                ] )
-        return None
-
-
-    def setup_solver(self, solver, compt, **kwargs):
-        """setup_solver. Use a solver for given reaction. Solvers must be set in
-        the end.
-
-        :param reac: moose.Reaction element.
-        :param solver: Type of solver i.e. ksolve/gsolve, string.
-
-        """
-
-        # If solver already exists in this compartment, do not add another
-        # solver. This is useful when more than one sections are added to
-        # compartment.
-        solverPath = '%s/stoich' % compt.path
-        if moose.exists( solverPath ):
-            pu.warn("I've already added a solver on comparment %s" % compt.name)
-            pu.warn("I won't add another solver. This usually causes segfaults")
-            return moose.Stoich( solverPath )
-
-        pu.info("Adding a solver %s to compartment %s" % (solver, compt.path))
+        solver = kwargs.get('solver', 'deterministic')
+        pu.info("Adding a solver %s to compartment %s" % (solver, compartment.path))
         s = None
+
+        # Check if solver is already added, if yes, return peacefully.
+        stoichPath = '%s/stoich' % compartment.path
+        if moose.exists( stoichPath ):
+            pu.info( 'Solver exists for compartment %s' % compartment.name )
+            stoich = moose.element( stoichPath )
+            return stoich
+
+        # if solver is not present, then continue
         if solver == "deterministic":
             pu.info('[INFO] Using deterministic solver')
-            s = moose.Ksolve('%s/ksolve' % compt.path)
+            s = moose.Ksolve('%s/ksolve' % compartment.path)
         elif solver == 'stochastic':
             pu.info('Using stochastic solver')
-            s = moose.Gsolve('%s/gsolve' % compt.path)
-            pu.info("Setting 'useClockedUpdate = True'; Honors function events.")
+            s = moose.Gsolve('%s/gsolve' % compartment.path)
+            pu.info("Setting up useClockedUpdate = True")
             s.useClockedUpdate = True
         else:
-            msg = "Unknown solver: %s. Using 'deterministic' solver." % solver
+            # Do not set any solver if correct name is not given/or empty name
+            # is given. user can set it up later. Let the user know however.
+            msg = "Unknown/invlaid solve typer: %s." % solver 
+            msg += " Not setting-up any solver."
             msg += "\n Choices: 'stochastic' and 'deterministic' (default)'"
-            pu.warn(msg)
-            s = moose.Ksolve('%s/ksolve' % compt.path)
+            logger_.info(msg)
+            return None
 
-        # If diffusion is enabled, then setup a solver to handle diffusion
-        if 'enable_diffusion' in self.globals_:
-            pu.info( 'Setting up solver to handle diffusion' )
-            dsolvePath = '%s/dsolve' % compt.path
-            if moose.exists( dsolvePath ):
-                mu.warn( 'Already exists %s. Doing nothing. ' % dsolvePath )
-            else:
-                dsolve = moose.Dsolve( '%s/dsolve' % compt.path )
+        enableDiffusion = kwargs.get('enable_diffusion', False)
+        if enableDiffusion:
+            pu.info( 'Setting up diffusion solver' )
+            dsolvePath = '%s/dsolve' % compartment.path
+            dsolve = moose.Dsolve( dsolvePath )
 
-        stoich = moose.Stoich('%s/stoich' % compt.path)
-        # NOTE: must be set before compartment or path.
-        stoich.compartment = compt
+        stoich = moose.Stoich( stoichPath )
         stoich.ksolve = s
-        if 'enable_diffusion' in self.globals_:
+        if enableDiffusion:
             stoich.dsolve = dsolve
+            compartment.diffLength = eval(kwargs['diffusion_length'])
+            logger_.info( "Diffusion length : %s" % compartment.diffLength )
+            logger_.info( "Compartment geometry : %s" % compt_info(compartment) )
+            logger_.info( "Diffusion compartments : %s" % compartment.numDiffCompts )
+            pu.info( 'Added diffusion solver' )
 
-        stoich.path = '%s/##' % compt.path
-        self.solver = stoich
+        # NOTE: must be set before compartment or path.
+        stoich.compartment = compartment
+        stoich.path = '%s/##' % compartment.path
         return stoich
 
     def add_pool(self, molecule, compt):

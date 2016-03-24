@@ -21,17 +21,6 @@ from yparser import pre_processor
 
 logger_ = config.logger_
 
-def loadYACML(yacml_file, **kwargs):
-    """loadYACML Load YACML model into MOOSE.
-
-    :param modelFile: Path of model.
-    :param **kwargs:
-    """
-    networkxG = yacml_to_networkx( yacml_file )
-    # Once graph is preprocess, load it in moose.
-    model = networkx2moose( networkxG, **kwargs)
-    return model
-
 def yacml_to_networkx( yacml_file, **kwargs ):
     """yacml_to_networkx Convert yacml model to equivalent networkx graph.
 
@@ -45,58 +34,16 @@ def networkx2moose( nxg, **kwargs ):
     model = yacml2moose.DotModel( nxg, **kwargs )
     return model
 
-def setup_solver( compartment, solver, **kwargs ):
-    """setup_solver Use a given solver 'solver' on compartment 'compartment'
+def loadYACML(yacml_file, **kwargs):
+    """loadYACML Load YACML model into MOOSE.
 
-    :param compartment: moose.Compartment type.
-    :param solver: deterministic or stochastic
-    :param **kwargs: TODO
+    :param modelFile: Path of model.
+    :param **kwargs:
     """
-    pu.info("Adding a solver %s to compartment %s" % (solver, compartment.path))
-    s = None
-    enableDiffusion = kwargs.get('enable_diffusion', False)
-
-    if enableDiffusion:
-        pu.info('Diffusion in compartment %s is enabled' % compartment.name )
-
-
-    if solver == "deterministic":
-        pu.info('[INFO] Using deterministic solver')
-        s = moose.Ksolve('%s/ksolve' % compartment.path)
-    elif solver == 'stochastic':
-        pu.info('Using stochastic solver')
-        s = moose.Gsolve('%s/gsolve' % compartment.path)
-        pu.info("Setting up useClockedUpdate = True")
-        s.useClockedUpdate = True
-    else:
-        msg = "Unknown solver: %s. Using 'deterministic' solver." % solver
-        msg += "\n Choices: 'stochastic' and 'deterministic' (default)'"
-        pu.warn(msg)
-        s = moose.Ksolve('%s/ksolve' % compartment.path)
-
-    if enableDiffusion:
-        pu.info( 'Setting up diffusion solver' )
-        dsolvePath = '%s/dsolve' % compartment.path
-        if moose.exists( dsolvePath ):
-            mu.warn( 'Already exists %s. Doing nothing. ' % dsolvePath )
-        else:
-            dsolve = moose.Dsolve( '%s/dsolve' % compartment.path )
-
-    stoich = moose.Stoich('%s/stoich' % compartment.path)
-    stoich.ksolve = s
-    if enableDiffusion:
-        pu.info('Added diffusion solver')
-        stoich.dsolve = dsolve
-        compartment.diffLength = eval(kwargs.get('diffusion_length', '1.0'))
-        logger_.info( "Diffusion length : %s" % compartment.diffLength )
-        logger_.info( "Diffusion compartments : %s" % compartment.numDiffCompts )
-        assert compartment.numDiffCompts > 1, compartment.numDiffCompts
-
-    # NOTE: must be set before compartment or path.
-    stoich.compartment = compartment
-    stoich.path = '%s/##' % compartment.path
-    return stoich
-
+    networkxG = yacml_to_networkx( yacml_file )
+    # Once graph is preprocess, load it in moose.
+    model = networkx2moose( networkxG, **kwargs)
+    return model
 
 def main(args):
     """Main entry function
