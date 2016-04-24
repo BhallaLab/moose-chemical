@@ -531,6 +531,8 @@ class DotModel():
         if solver == "deterministic":
             pu.info('[INFO] Using deterministic solver')
             s = moose.Ksolve('%s/ksolve' % compartment.path)
+            s.method = self.get( 'method', 'rk4' )
+            pu.info( 'Using %s method ' % s.method )
         elif solver == 'stochastic':
             pu.info('Using stochastic solver')
             s = moose.Gsolve('%s/gsolve' % compartment.path)
