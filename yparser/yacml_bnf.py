@@ -15,7 +15,6 @@ __status__           = "Development"
 
 from pyparsing import *
 
-
 # YACML BNF.
 yacmlBNF_ = None
 pIdentifier = Word( alphas+"_", alphanums+"_" )
@@ -25,7 +24,7 @@ pEnd = Keyword("end") + Optional( pIdentifier )
 
 pComptName = pIdentifier
 pPoolName = pIdentifier
-pEOS = Literal( ";" ) | lineEnd      # Ending literal, mostly optional
+pEOS = Literal( ";" ) 
 LBRAC = Literal("[")
 RBRAC = Literal("]")
 LCBRAC = Literal("{")
@@ -34,13 +33,16 @@ EQUAL = Literal('=')
 RREAC = Literal( "->" )
 LREAC = Literal( "<-" )
 
-pReal = Regex(r"[+-]?\d+\.\d*([eE][+-]?\d+)?")
+pReal = pyparsing_common.sciReal | pyparsing_common.real
 pReal.setParseAction( lambda t: float(t[0]) )
 pDecimal = Regex(r'[+-]?[0-9]\d*(.\d+)?') | Regex( r'[+-]?[0-9]*\.\d+' )
 pNumVal = ( pReal  | pDecimal )
 pNumVal.setParseAction( lambda t: float(t[0]) )
 
-pKeyVals = pIdentifier + EQUAL + Group( pNumVal | pIdentifier | quotedString() )
+# Parser for key = value expression.
+pValue = ( pNumVal | pIdentifier | quotedString() )
+
+pKeyVals = pIdentifier + EQUAL + pValue 
 
 pPoolExpr = pPoolName + LBRAC + delimitedList( pKeyVals ) + RBRAC + pEOS
 
@@ -68,7 +70,7 @@ yacmlBNF_.ignore( javaStyleComment )
 
 def main( ):
     print('Testing ' )
-    print pKeyVals.parseString( 'AV = "6.023e23"' )
+    print pKeyVals.parseString( 'AV = 6.023e23' )
     print pCompartment.parseString( 
         '''compartment PSD has
             AV =  6.023e23 
@@ -78,7 +80,8 @@ def main( ):
     print pNumVal.parseString( "1.5111" )
     print pNumVal.parseString( ".5111" )
     print pNumVal.parseString( "-1.35e13" )
-    print pReacExpr.parseString( 'a + b <- r0 -> c + d' )
+    print pNumVal.parseString( "1e-2" )
+    print pReacExpr.parseString( '2a + 3b <- r0 -> c + 9d' )
 
 if __name__ == '__main__':
     main()
