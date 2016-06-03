@@ -39,10 +39,10 @@ def get_identifiers( syntax_tree ):
 def build_ast( expr ):
     st = None
     try:
-        st = ast.parse( expr )
+        st = ast.parse( str(expr) )
     except Exception as e:
-        logger_.debug("Could not build AST out of %s" % expr)
-        logger_.debug(" Error : %s" % e)
+        logger_.debug("Could not build AST out of expression= %s" % expr)
+        logger_.debug("\tError : %s" % e)
     return st
 
 def pre_process_node( node, network ):

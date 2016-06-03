@@ -157,15 +157,14 @@ class DotModel():
             logger_.warn(' Compartment (%s) already exist' % self.comptPath )
             return moose.Neutral( self.comptPath )
         if self.globals_.get('geometry', 'cube').lower() == 'cube':
-            logger_.info("Creating cubical compartment")
+            logger_.info("Creating cubical compartment %s" % self.comptPath )
             curCompt =  moose.CubeMesh( self.comptPath )
         else:
-            logger_.info("Creating cylinderical compartment")
+            logger_.info("Creating cylinderical compartment %s" % self.comptPath)
             curCompt = moose.CylMesh( self.comptPath )
 
         assert curCompt
         self.assign_paramters_to_compartment( curCompt )
-
         return curCompt
 
 
@@ -538,12 +537,12 @@ class DotModel():
             s = moose.Gsolve('%s/gsolve' % compartment.path)
             pu.info("Setting up useClockedUpdate = True")
             s.useClockedUpdate = True
-        else:
+        elif solver == "none":
             # Do not set any solver if correct name is not given/or empty name
             # is given. user can set it up later. Let the user know however.
-            msg = "Unknown/invlaid solve typer: %s." % solver 
-            msg += " Not setting-up any solver."
-            msg += "\n Choices: 'stochastic' and 'deterministic' (default)'"
+            msg = "Solver type is %s." % solver 
+            msg += " You should setup solver later by yourself."
+            msg += "\n Choices: 'stochastic' and 'deterministic'"
             logger_.info(msg)
             return None
 

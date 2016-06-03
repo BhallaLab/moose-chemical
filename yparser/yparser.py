@@ -17,16 +17,48 @@ __status__           = "Development"
 import networkx as nx
 import networkx.drawing.nx_agraph as nxAG
 import tempfile
-
+import re
+from yacml_bnf import yacmlBNF_
 from config import logger_
 
 
+# A YACML file can have more than one compartment. Store them in this
+# dictionary.
+compartments_ = {}
+
+# For each compartment in compartments_, create a graph and store it in
+# following dictionary.
+compartmentGraphs_ = {}
+
+def parse_text( text ):
+    pass
+
+def parse( filename ):
+    print( '[INFO] Parsing %s' % filename )
+    yacmlBNF_.setDebug( )
+    yacmlBNF_.parseFile( filename )
+
+def remove_comments( text ):
+    text = re.sub( r'\/\*.+?\*\/', '', text, flags = re.DOTALL )
+    text = re.sub( r'\s+\/\/.*', '', text )
+    return text
+
 def yacml_to_dot( yacml_text ):
     """Convert yacml_text to valid graphviz text """
+    yacml_text = remove_comments( yacml_text )
+    comptPat = re.compile(
+            r'compartment\s+(?P<name>\w+)\s+?{(?P<body>.+?)}'
+            , re.DOTALL
+            )
+    for compt in comptPat.findall( yacml_text ):
+        compartments_[compt[0]] = compt[1]
+
     gvText = yacml_text.replace( 'compartment', 'digraph' )
     return gvText
 
 def create_graph( yacml_file, **kwargs ):
+    parse( yacml_file )
+    quit( )
     logger_.info("Parsing %s to create netowrkx graph" % yacml_file)
     # Create a temporary file to convert the yacml file to dot file. After this,
     # parser the dot file to generate the graph.
