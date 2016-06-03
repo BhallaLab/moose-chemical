@@ -14,16 +14,24 @@ __email__            = "dilawars@ncbs.res.in"
 __status__           = "Development"
 
 from pyparsing import *
+from lxml import etree
 
 # YACML BNF.
 yacmlBNF_ = None
-pIdentifier = Word( alphas+"_", alphanums+"_" )
-pComptBegin = Keyword("compartment")
-pHas = Keyword("has")
-pEnd = Keyword("end") + Optional( pIdentifier )
+yacmlXML_ = etree.Element('yacml')
+currXMLElem_ = None
+
+pIdentifier = pyparsing_common.identifier
+COMPT_BEGIN = Keyword("compartment")
+HAS = Keyword("has")
+IS = Keyword( "is" )
+END = Keyword("end") + Optional( pIdentifier )
+SPECIES = Keyword( "species" ) | Keyword( "pool" )
+REACTION = Keyword( "reaction" ) | Keyword( "reac" )
+GEOMETRY = Keyword("cylinder") | Keyword( "cube" ) | Keyword( "Spine" )
 
 pComptName = pIdentifier
-pPoolName = pIdentifier
+pSpeciesName = pIdentifier
 pEOS = Literal( ";" ) 
 LBRAC = Literal("[")
 RBRAC = Literal("]")
@@ -33,10 +41,8 @@ EQUAL = Literal('=')
 RREAC = Literal( "->" )
 LREAC = Literal( "<-" )
 
-pReal = pyparsing_common.sciReal | pyparsing_common.real
-pReal.setParseAction( lambda t: float(t[0]) )
-pDecimal = Regex(r'[+-]?[0-9]\d*(.\d+)?') | Regex( r'[+-]?[0-9]*\.\d+' )
-pNumVal = ( pReal  | pDecimal )
+pNumVal = pyparsing_common.numeric | pyparsing_common.integer \
+    | pyparsing_common.number | Regex( r'\.\d+' )
 pNumVal.setParseAction( lambda t: float(t[0]) )
 
 # Parser for key = value expression.
@@ -44,26 +50,33 @@ pValue = ( pNumVal | pIdentifier | quotedString() )
 
 pKeyVals = pIdentifier + EQUAL + pValue 
 
-pPoolExpr = pPoolName + LBRAC + delimitedList( pKeyVals ) + RBRAC + pEOS
+pKeyValList = LBRAC + delimitedList( pKeyVals ) + RBRAC
+pSpeciesExpr = SPECIES + pSpeciesName + pKeyValList + pEOS
 
-# Pool name with stoichiometry coefficient e.g 2a + 3b 
+# Species name with stoichiometry coefficient e.g 2a + 3b 
 pStoichNumber = Optional(Word(nums), '1') 
 pStoichNumber.setParseAction( lambda x: int(x[0] ) )
-pPoolNameWithStoichCoeff = Group( pStoichNumber + pPoolName )
+pSpeciesNameWithStoichCoeff = Group( pStoichNumber + pSpeciesName )
 
 # Expression for reactions.
-pSubstrasteList = Group( delimitedList( pPoolNameWithStoichCoeff, '+' ) )
-pProductList = Group( delimitedList( pPoolNameWithStoichCoeff, '+' ) )
-pReacExpr = pIdentifier
-pReacExpr = pSubstrasteList + LREAC + pReacExpr + RREAC + pProductList + pEOS
+pSubstrasteList = Group( delimitedList( pSpeciesNameWithStoichCoeff, '+' ) )
+pProductList = Group( delimitedList( pSpeciesNameWithStoichCoeff, '+' ) )
+
+pReacName = pIdentifier
+pReacDecl = REACTION + pReacName + pKeyValList + pEOS
+pReacSetup = pSubstrasteList + LREAC + pReacName + RREAC + pProductList + pEOS
+pReacExpr = pReacDecl | pReacSetup 
 
 pVariableExpr = pKeyVals + pEOS
 
 # Valid YAXML expression
-pYACMLExpr = pPoolExpr | pReacExpr | pVariableExpr 
+pYACMLExpr = pSpeciesExpr | pReacExpr | pVariableExpr 
+
+pGeometry = GEOMETRY + Optional( pKeyValList )
 
 pCompartmentBody = OneOrMore( pYACMLExpr )
-pCompartment = pComptBegin + pComptName + pHas + pCompartmentBody + pEnd
+pCompartment = COMPT_BEGIN + pComptName + IS + pGeometry + HAS \
+        + pCompartmentBody + END
 
 yacmlBNF_ = OneOrMore( pCompartment) 
 yacmlBNF_.ignore( javaStyleComment )
@@ -73,15 +86,15 @@ def main( ):
     print pKeyVals.parseString( 'AV = 6.023e23' )
     print pCompartment.parseString( 
         '''compartment PSD has
-            AV =  6.023e23 
-        end compartment
+            AV = 6.023e23;
+        end PSD
         '''
         )
     print pNumVal.parseString( "1.5111" )
     print pNumVal.parseString( ".5111" )
     print pNumVal.parseString( "-1.35e13" )
     print pNumVal.parseString( "1e-2" )
-    print pReacExpr.parseString( '2a + 3b <- r0 -> c + 9d' )
+    print pReacExpr.parseString( '2a + 3b <- r0 -> c + 9d;' )
 
 if __name__ == '__main__':
     main()

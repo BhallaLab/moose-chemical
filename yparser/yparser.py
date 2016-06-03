@@ -19,16 +19,9 @@ import networkx.drawing.nx_agraph as nxAG
 import tempfile
 import re
 from yacml_bnf import yacmlBNF_
+from yacml_bnf import yacmlXML_
 from config import logger_
-
-
-# A YACML file can have more than one compartment. Store them in this
-# dictionary.
-compartments_ = {}
-
-# For each compartment in compartments_, create a graph and store it in
-# following dictionary.
-compartmentGraphs_ = {}
+from lxml import etree
 
 def parse_text( text ):
     pass
@@ -37,6 +30,7 @@ def parse( filename ):
     print( '[INFO] Parsing %s' % filename )
     yacmlBNF_.setDebug( )
     yacmlBNF_.parseFile( filename )
+    print etree.tostring( yacmlXML_ , pretty_print = True)
 
 def remove_comments( text ):
     text = re.sub( r'\/\*.+?\*\/', '', text, flags = re.DOTALL )
