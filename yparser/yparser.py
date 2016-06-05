@@ -29,7 +29,7 @@ def parse( filename ):
     print( '[INFO] Parsing %s' % filename )
     bnf.yacmlBNF_.setDebug( )
     bnf.yacmlBNF_.parseFile( filename )
-    print(etree.tostring( yacmlXML_ , pretty_print = True))
+    print(etree.tostring( bnf.yacmlXML_ , pretty_print = True))
 
 def remove_comments( text ):
     text = re.sub( r'\/\*.+?\*\/', '', text, flags = re.DOTALL )
