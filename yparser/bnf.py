@@ -16,6 +16,7 @@ __status__           = "Development"
 from .pyparsing import *
 
 from lxml import etree
+import bnf_helper as bnfh
 
 # YACML BNF.
 yacmlBNF_ = None
@@ -55,6 +56,7 @@ pKeyVals = pIdentifier + EQUAL + pValue
 
 pKeyValList = LBRAC + delimitedList( pKeyVals ) + RBRAC
 pSpeciesExpr = SPECIES + pSpeciesName + pKeyValList + pEOS
+pSpeciesExpr.setParseAction( bnfh.add_species )
 
 # Species name with stoichiometry coefficient e.g 2a + 3b 
 pStoichNumber = Optional(Word(nums), '1') 

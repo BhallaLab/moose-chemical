@@ -15,7 +15,7 @@ __status__           = "Development"
 import yacml2moose
 import config
 import yparser.yparser as yp
-import yparser.yacml_bnf as bnf
+import yparser.bnf as bnf
 import yparser.pre_processor
 import moose
 import moose.utils as mu

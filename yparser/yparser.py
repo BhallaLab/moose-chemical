@@ -18,7 +18,7 @@ import networkx as nx
 import networkx.drawing.nx_agraph as nxAG
 import tempfile
 import re
-import yacml_bnf as bnf
+import bnf 
 from config import logger_
 from lxml import etree
 
@@ -27,7 +27,7 @@ def parse_text( text ):
 
 def parse( filename ):
     print( '[INFO] Parsing %s' % filename )
-    bnf.yacmlBNF_.setDebug( )
+    # bnf.yacmlBNF_.setDebug( )
     bnf.yacmlBNF_.parseFile( filename )
     print(etree.tostring( bnf.yacmlXML_ , pretty_print = True))
 
