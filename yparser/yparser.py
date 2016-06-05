@@ -18,8 +18,7 @@ import networkx as nx
 import networkx.drawing.nx_agraph as nxAG
 import tempfile
 import re
-from yacml_bnf import yacmlBNF_
-from yacml_bnf import yacmlXML_
+import yacml_bnf as bnf
 from config import logger_
 from lxml import etree
 
@@ -28,9 +27,9 @@ def parse_text( text ):
 
 def parse( filename ):
     print( '[INFO] Parsing %s' % filename )
-    yacmlBNF_.setDebug( )
-    yacmlBNF_.parseFile( filename )
-    print etree.tostring( yacmlXML_ , pretty_print = True)
+    bnf.yacmlBNF_.setDebug( )
+    bnf.yacmlBNF_.parseFile( filename )
+    print(etree.tostring( yacmlXML_ , pretty_print = True))
 
 def remove_comments( text ):
     text = re.sub( r'\/\*.+?\*\/', '', text, flags = re.DOTALL )

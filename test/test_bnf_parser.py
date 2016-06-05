@@ -16,28 +16,27 @@ __status__           = "Development"
 import sys
 import os
 
-d = os.path.dirname( os.path.abspath( __file__ ) )
-sys.path.append( os.path.join(d, '../yparser' ) )
-
-# from ..yparser.yacml_bnf import *
-from yacml_bnf import *
+from yparser.yacml_bnf import *
 
 def main( ):
     print( '[INFO] Main function' )
-
     print('Testing ' )
-    print pKeyVals.parseString( 'AV = 6.023e23' )
-    print pCompartment.parseString( 
-        '''compartment PSD has
+    print(pKeyVals.parseString( 'AV = 6.023e23' ))
+    print(pCompartment.parseString( 
+        '''
+        compartment PSD is 
+            cube 
+        has
             AV = 6.023e23;
         end PSD
         '''
-        )
-    print pNumVal.parseString( "1.5111" )
-    print pNumVal.parseString( ".5111" )
-    print pNumVal.parseString( "-1.35e13" )
-    print pNumVal.parseString( "1e-2" )
-    print pReacExpr.parseString( '2a + 3b <- r0 -> c + 9d;' )
+        ))
+    print( pNumVal.parseString( "1.5111" ) )
+    print( pNumVal.parseString( ".5111" ) )
+    print( pNumVal.parseString( "-1.35e13" ) )
+    print( pNumVal.parseString( "1e-2" ) )
+    print( pReacExpr.parseString( '2a + 3b <- r0 -> c + 9d;' ) )
+    print( pYACMLExpr.parseString( 'const vm = "2.9*x";' ) )
 
 if __name__ == '__main__':
     main()

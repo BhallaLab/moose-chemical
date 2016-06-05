@@ -13,7 +13,8 @@ __maintainer__       = "Dilawar Singh"
 __email__            = "dilawars@ncbs.res.in"
 __status__           = "Development"
 
-from pyparsing import *
+from .pyparsing import *
+
 from lxml import etree
 
 # YACML BNF.
@@ -26,9 +27,11 @@ COMPT_BEGIN = Keyword("compartment")
 HAS = Keyword("has")
 IS = Keyword( "is" )
 END = Keyword("end") + Optional( pIdentifier )
-SPECIES = Keyword( "species" ) | Keyword( "pool" )
-REACTION = Keyword( "reaction" ) | Keyword( "reac" )
+SPECIES = Keyword( "species" ) | Keyword( "pool" ) | Keyword( "enzyme" )
+REACTION = Keyword( "reaction" ) | Keyword( "reac" ) | Keyword( "enz_reac" )
 GEOMETRY = Keyword("cylinder") | Keyword( "cube" ) | Keyword( "Spine" )
+VAR = Keyword( "var" ) 
+CONST = Keyword( "const" )
 
 pComptName = pIdentifier
 pSpeciesName = pIdentifier
@@ -67,7 +70,8 @@ pReacDecl = REACTION + pReacName + pKeyValList + pEOS
 pReacSetup = pSubstrasteList + LREAC + pReacName + RREAC + pProductList + pEOS
 pReacExpr = pReacDecl | pReacSetup 
 
-pVariableExpr = pKeyVals + pEOS
+pTypeExpr = CONST | VAR
+pVariableExpr = Optional(pTypeExpr) + pKeyVals + pEOS
 
 # Valid YAXML expression
 pYACMLExpr = pSpeciesExpr | pReacExpr | pVariableExpr 
@@ -80,21 +84,6 @@ pCompartment = COMPT_BEGIN + pComptName + IS + pGeometry + HAS \
 
 yacmlBNF_ = OneOrMore( pCompartment) 
 yacmlBNF_.ignore( javaStyleComment )
-
-def main( ):
-    print('Testing ' )
-    print pKeyVals.parseString( 'AV = 6.023e23' )
-    print pCompartment.parseString( 
-        '''compartment PSD has
-            AV = 6.023e23;
-        end PSD
-        '''
-        )
-    print pNumVal.parseString( "1.5111" )
-    print pNumVal.parseString( ".5111" )
-    print pNumVal.parseString( "-1.35e13" )
-    print pNumVal.parseString( "1e-2" )
-    print pReacExpr.parseString( '2a + 3b <- r0 -> c + 9d;' )
 
 if __name__ == '__main__':
     main()

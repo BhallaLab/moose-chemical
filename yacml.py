@@ -14,10 +14,11 @@ __status__           = "Development"
 
 import yacml2moose
 import config
-import moose.print_utils as pu
+import yparser.yparser as yp
+import yparser.yacml_bnf as bnf
+import yparser.pre_processor
 import moose
-from yparser import yparser
-from yparser import pre_processor
+import moose.utils as mu
 
 logger_ = config.logger_
 
@@ -26,7 +27,7 @@ def yacml_to_networkx( yacml_file, **kwargs ):
 
     :param yacml_file: path of yacml file.
     """
-    nxG = yparser.create_graph( yacml_file, **kwargs )
+    nxG = yp.create_graph( yacml_file, **kwargs )
     pre_processor.pre_process( nxG )
     return nxG
 
@@ -60,43 +61,43 @@ def main(args):
         logger_.error("Invalid solver: %s " % args['solver'])
     return None
 
-if __name__ == '__main__':
-    import argparse
-    # Argument parser.
-    description = '''YACML: Yet Another Chemical Markup Language'''
-    argp = argparse.ArgumentParser(description=description)
-    argp.add_argument('--model_file', '-f'
-            , required = True
-            , type = str
-            , help = 'Model file'
-            )
-    
-    argp.add_argument('--sim_time', '-st'
-            , metavar='variable'
-            , default = 10.0
-            , type = float
-            , help = 'A generic option'
-            )
-
-    argp.add_argument('--solver', '-s'
-            , default = 'moose'
-            , type = str
-            , help = "Which solver to use: moose | scipy"
-            )
-
-    argp.add_argument('--outfile', '-o'
-            , default = None
-            , type = str
-            , help = "Name of the plot file"
-            )
-
-    argp.add_argument('--log', '-l'
-            , default = 'warning'
-            , type = str
-            , help = 'Debug levels: [debug, info, warning, error, critical]'
-            )
-
-    class Args: pass 
-    args = Args()
-    argp.parse_args(namespace=args)
-    main(vars(args))
+# if __name__ == '__main__':
+#     import argparse
+#     # Argument parser.
+#     description = '''YACML: Yet Another Chemical Markup Language'''
+#     argp = argparse.ArgumentParser(description=description)
+#     argp.add_argument('--model_file', '-f'
+#             , required = True
+#             , type = str
+#             , help = 'Model file'
+#             )
+#     
+#     argp.add_argument('--sim_time', '-st'
+#             , metavar='variable'
+#             , default = 10.0
+#             , type = float
+#             , help = 'A generic option'
+#             )
+# 
+#     argp.add_argument('--solver', '-s'
+#             , default = 'moose'
+#             , type = str
+#             , help = "Which solver to use: moose | scipy"
+#             )
+# 
+#     argp.add_argument('--outfile', '-o'
+#             , default = None
+#             , type = str
+#             , help = "Name of the plot file"
+#             )
+# 
+#     argp.add_argument('--log', '-l'
+#             , default = 'warning'
+#             , type = str
+#             , help = 'Debug levels: [debug, info, warning, error, critical]'
+#             )
+# 
+#     class Args: pass 
+#     args = Args()
+#     argp.parse_args(namespace=args)
+#     main(vars(args))
