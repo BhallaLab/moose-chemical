@@ -14,5 +14,4 @@ install:
 
 script:
     -  echo "Doing nothing"
-    - #( cd ./test && ./test_all.sh )
 
