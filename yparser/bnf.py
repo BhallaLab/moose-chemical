@@ -11,8 +11,7 @@ __license__          = "GNU GPL"
 __version__          = "1.0.0"
 __maintainer__       = "Dilawar Singh"
 __email__            = "dilawars@ncbs.res.in"
-ashmirathi1
-p "Development"
+__status__           = "Development"
 
 from .pyparsing import *
 import networkx as nx
@@ -20,12 +19,13 @@ import networkx as nx
 # Function to generate graph.
 network_ = nx.MultiDiGraph( name = 'yacml' )
 
-def add_species( tokens, node ):
-    pass 
+def add_species( tokens, **kwargs ):
+    return None
+    print('Adding %s' % tokens )
 
 def add_recipe( tokens, **kwargs):
-    print tokens
-    pass
+    return None
+    print( 'Adding recipe %s' % tokens )
 
 # YACML BNF.
 yacmlBNF_ = None
