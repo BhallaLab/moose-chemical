@@ -20,11 +20,10 @@ import networkx as nx
 network_ = nx.MultiDiGraph( name = 'yacml' )
 
 def add_species( tokens, **kwargs ):
-    return None
+    return "xxxx"
     print('Adding %s' % tokens )
 
 def add_recipe( tokens, **kwargs):
-    return None
     print( 'Adding recipe %s' % tokens )
 
 # YACML BNF.
