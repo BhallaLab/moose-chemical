@@ -20,7 +20,7 @@ import tempfile
 import re
 import bnf 
 from config import logger_
-from lxml import etree
+import pylab
 
 def parse_text( text ):
     pass
@@ -28,8 +28,9 @@ def parse_text( text ):
 def parse( filename ):
     print( '[INFO] Parsing %s' % filename )
     # bnf.yacmlBNF_.setDebug( )
-    bnf.yacmlBNF_.parseFile( filename )
-    print(etree.tostring( bnf.yacmlXML_ , pretty_print = True))
+    data = bnf.yacmlBNF_.parseFile( filename )
+    nx.draw( bnf.network_ )
+    pylab.show( )
 
 def remove_comments( text ):
     text = re.sub( r'\/\*.+?\*\/', '', text, flags = re.DOTALL )

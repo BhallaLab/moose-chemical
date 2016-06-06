@@ -1,6 +1,6 @@
 """yacml_bnf.py: 
 
-    BNFC grammar of YACML.
+BNFC grammar of YACML.
 
 """
     
@@ -11,20 +11,29 @@ __license__          = "GNU GPL"
 __version__          = "1.0.0"
 __maintainer__       = "Dilawar Singh"
 __email__            = "dilawars@ncbs.res.in"
-__status__           = "Development"
+ashmirathi1
+p "Development"
 
 from .pyparsing import *
+import networkx as nx
 
-from lxml import etree
-import bnf_helper as bnfh
+# Function to generate graph.
+network_ = nx.MultiDiGraph( name = 'yacml' )
+
+def add_species( tokens, node ):
+    pass 
+
+def add_recipe( tokens, **kwargs):
+    print tokens
+    pass
 
 # YACML BNF.
 yacmlBNF_ = None
-yacmlXML_ = etree.Element('yacml')
 currXMLElem_ = None
 
 pIdentifier = pyparsing_common.identifier
 COMPT_BEGIN = Keyword("compartment")
+RECIPE_BEGIN = Keyword( "recipe" )
 HAS = Keyword("has")
 IS = Keyword( "is" )
 END = Keyword("end") + Optional( pIdentifier )
@@ -45,8 +54,10 @@ EQUAL = Literal('=')
 RREAC = Literal( "->" )
 LREAC = Literal( "<-" )
 
-pNumVal = pyparsing_common.numeric | pyparsing_common.integer \
-    | pyparsing_common.number | Regex( r'\.\d+' )
+pNumVal = pyparsing_common.numeric \
+        | pyparsing_common.integer \
+        | pyparsing_common.number | Regex( r'\.\d+' )
+
 pNumVal.setParseAction( lambda t: float(t[0]) )
 
 # Parser for key = value expression.
@@ -54,9 +65,9 @@ pValue = ( pNumVal | pIdentifier | quotedString() )
 
 pKeyVals = pIdentifier + EQUAL + pValue 
 
-pKeyValList = LBRAC + delimitedList( pKeyVals ) + RBRAC
-pSpeciesExpr = SPECIES + pSpeciesName + pKeyValList + pEOS
-pSpeciesExpr.setParseAction( bnfh.add_species )
+pKeyValList = LBRAC + Group( delimitedList( pKeyVals )) + RBRAC
+pSpeciesExpr = SPECIES + Group( pSpeciesName + pKeyValList) + pEOS
+pSpeciesExpr.setParseAction( add_species )
 
 # Species name with stoichiometry coefficient e.g 2a + 3b 
 pStoichNumber = Optional(Word(nums), '1') 
@@ -75,16 +86,29 @@ pReacExpr = pReacDecl | pReacSetup
 pTypeExpr = CONST | VAR
 pVariableExpr = Optional(pTypeExpr) + pKeyVals + pEOS
 
-# Valid YAXML expression
-pYACMLExpr = pSpeciesExpr | pReacExpr | pVariableExpr 
+# Name of the recipe
+pRecipeName = pIdentifier
 
+# Recipe instantiation expression
+pRecipeType = pIdentifier 
+pInstExpr = pRecipeType + pRecipeName + END
+
+# Valid YAXML expression
+pYACMLExpr = pSpeciesExpr | pReacExpr | pVariableExpr | pInstExpr
 pGeometry = GEOMETRY + Optional( pKeyValList )
 
+# Compartment 
 pCompartmentBody = OneOrMore( pYACMLExpr )
 pCompartment = COMPT_BEGIN + pComptName + IS + pGeometry + HAS \
         + pCompartmentBody + END
 
-yacmlBNF_ = OneOrMore( pCompartment) 
+# Recipe 
+pRecipeBody = Group( OneOrMore( pYACMLExpr ) )
+pRecipeBody.setResultsName( 'recepe_body' )
+pRecipe =  RECIPE_BEGIN + pRecipeName + IS  + pRecipeBody + END 
+pRecipe.setParseAction( add_recipe )
+
+yacmlBNF_ = OneOrMore( pRecipe | pCompartment  ) 
 yacmlBNF_.ignore( javaStyleComment )
 
 if __name__ == '__main__':
