@@ -41,9 +41,13 @@ def loadYACML(yacml_file, **kwargs):
     :param modelFile: Path of model.
     :param **kwargs:
     """
+    xml = yp.parse( yacml_file )
+    yacml2moose.load( xml )
+    quit( )
+
     networkxG = yacml_to_networkx( yacml_file )
     # Once graph is preprocess, load it in moose.
-    model = networkx2moose( networkxG, **kwargs)
+    model = networkx2moose.load( networkxG, **kwargs)
     return model
 
 def main(args):
@@ -51,6 +55,9 @@ def main(args):
     """
     config.args_ = args
     modelFile = args['model_file']
+    xml = yp.parse( modelFile )
+    yacml2moose.load( xml )
+    quit()
     if args['solver'] == 'moose':
         model = yacml2moose.DotModel(modelFile)
         model.run(args)

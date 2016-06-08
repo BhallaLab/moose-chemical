@@ -21,16 +21,15 @@ import re
 import bnf 
 from config import logger_
 import pylab
+import lxml.etree as etree
 
 def parse_text( text ):
     pass
 
 def parse( filename ):
     print( '[INFO] Parsing %s' % filename )
-    # bnf.yacmlBNF_.setDebug( )
     data = bnf.yacmlBNF_.parseFile( filename )
-    nx.draw( bnf.network_ )
-    pylab.show( )
+    return data
 
 def remove_comments( text ):
     text = re.sub( r'\/\*.+?\*\/', '', text, flags = re.DOTALL )
@@ -51,8 +50,7 @@ def yacml_to_dot( yacml_text ):
     return gvText
 
 def create_graph( yacml_file, **kwargs ):
-    parse( yacml_file )
-    quit( )
+    xml = parse( yacml_file )
     logger_.info("Parsing %s to create netowrkx graph" % yacml_file)
     # Create a temporary file to convert the yacml file to dot file. After this,
     # parser the dot file to generate the graph.

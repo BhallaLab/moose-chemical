@@ -28,7 +28,7 @@ class Pool(object):
         self.nInit = 0.0
         self.n = "0.0"
         self.rate = False
-        self.assign(attribs)
+        # self.assign(attribs)
 
     def assign(self, attribs):
 

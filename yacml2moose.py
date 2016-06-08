@@ -24,6 +24,7 @@ from utils import expression as _expr
 import notify as warn
 import config
 from utils import typeclass as tc
+import lxml.etree as etree
 # from utils.helper import *
 logger_ = config.logger_
 
@@ -61,6 +62,11 @@ def replace_in_expr(frm, to, expr):
 
 def get_path_of_node(moose_compt, name):
     return "%s/%s" % (moose_compt.path, name)
+
+def load( xml ):
+    for e in xml:
+        print e.tostring( )
+        print e
 
 class DotModel():
     '''
