@@ -20,11 +20,6 @@ import utils.typeclass as tc
 
 # Function to generate graph.
 xml_ = etree.Element( 'yacml' )
-# globals_ = etree.SubElement( xml_, 'list_of_parameters' )
-# recipes_ = etree.SubElement( xml_, 'list_of_recipes' )
-# compartments_ = etree.SubElement( xml_, 'list_of_compartments' )
-# species_ = etree.SubElement(xml_, 'list_of_species' )
-# model_ = etree.SubElement( xml_, 'model' )
 
 def add_variable( tokens, **kwargs):
     var = etree.Element( 'variable' )
@@ -87,18 +82,33 @@ def add_recipe_instance( tokens, **kwargs ):
     recipeInst.text = tokens[1]
     return recipeInst
 
-
-##
-# @brief Main parser function 
-#
-# @param tokens. List of tokens.
-# @param kwargs. Dictionary of arguments.
-#
-# @return Return the AST in XML.
-def parser_main( tokens, **kwargs ):
+def add_model( tokens, **kwargs ):
     global xml_
-    print tokens
-    return xml_
+    print( '[INFO] Adding top-level model ' )
+    modelXml = etree.Element( 'model' )
+    nameXml = etree.SubElement( modelXml, 'name' )
+    nameXml.text = tokens[1]
+    for t in tokens[2:]:
+        if isinstance(t, etree._Element ):
+            modelXml.append( t )
+        else:
+            print('[WARN] Unhandled token found %s' % t )
+
+    xml_.append( modelXml )
+
+def add_compt_instance( tokens, **kwargs ):
+    instXml = etree.Element( 'compartment_instance' )
+    instXml.text = tokens[1]
+    instXml.attrib['instance_of'] = tokens[0]
+    
+    # attach all other tokesn.
+    for x in tokens[2:]:
+        if isinstance( x, lxml._Element ):
+            instXml.append( x )
+        else:
+            instXml.attrib[x[0]] = x[1]
+    return instXml
+
 
 ##
 # @brief Add a compartment to XML AST.
@@ -126,10 +136,23 @@ def add_compartment( tokens, **kwargs ):
     xml_.append( compt )
     return compt
 
+##
+# @brief Main parser function 
+#
+# @param tokens. List of tokens.
+# @param kwargs. Dictionary of arguments.
+#
+# @return Return the AST in XML.
+def parser_main( tokens, **kwargs ):
+    global xml_
+    print tokens
+    return xml_
+
 
 # YACML BNF.
 COMPT_BEGIN = Keyword("compartment")
 RECIPE_BEGIN = Keyword( "recipe" )
+MODEL_BEGIN = Keyword( "model" ) | Keyword( "pathway" )
 HAS = Keyword("has").suppress()
 IS = Keyword( "is" ).suppress()
 SPECIES = Keyword( "species" ) | Keyword( "pool" ) | Keyword( "enzyme" )
@@ -140,7 +163,8 @@ CONST = Keyword( "const" )
 BUFFERED = Keyword( "buffered" ).setParseAction( lambda x: 'true' )
 END = Keyword("end")
 
-anyKeyword = COMPT_BEGIN | RECIPE_BEGIN | HAS | IS | SPECIES | REACTION \
+anyKeyword = COMPT_BEGIN | RECIPE_BEGIN | MODEL_BEGIN \
+        | HAS | IS | SPECIES | REACTION \
         | GEOMETRY | VAR | CONST | BUFFERED | END
 
 # literals.
@@ -239,17 +263,20 @@ pRecipe.setParseAction( add_recipe )
 
 pComptType = pIdentifier 
 pComptInstName = pIdentifier 
-pComptInst = pComptType + pComptInstName
+pComptInst = pComptType + pComptInstName + pEOS
+pComptInst.setParseAction( add_compt_instance )
 
-# TODO
-pCrossComptReactions = pIdentifier
+pModelName = pIdentifier
+pModelStmt = ( pComptInst | pKeyVals + pEOS )
 
-# TODO
-pModelStmt = pIdentifier + EQUAL + pIdentifier
-pModel = pComptInst | pCrossComptReactions | pModelStmt
+pModel = MODEL_BEGIN + pModelName + HAS +  OneOrMore( pModelStmt ) + END
+pModel.setParseAction( add_model )
 
-yacmlBNF_ = OneOrMore( pRecipe | pCompartment | pModel ) 
+# There must be one and only one model statement in each file. Each model must
+# have at least one compartment. Each compartment must have at least one recipe.
+yacmlBNF_ = OneOrMore( pRecipe | pCompartment ) + pModel
+
 # yacmlBNF_ = OneOrMore( pCompartment )
 yacmlBNF_.setParseAction( parser_main )
 yacmlBNF_.ignore( javaStyleComment )
-# yacmlBNF_.setDebug( )
+#yacmlBNF_.setDebug( )
