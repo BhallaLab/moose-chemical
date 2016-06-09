@@ -14,17 +14,17 @@ __email__            = "dilawars@ncbs.res.in"
 __status__           = "Development"
 
 from .pyparsing import *
-import xml
-import xml.etree.ElementTree as etree
+import lxml.etree as etree
+import lxml
 import utils.typeclass as tc
 
 # Function to generate graph.
 xml_ = etree.Element( 'yacml' )
-globals_ = etree.SubElement( xml_, 'list_of_parameters' )
-recipes_ = etree.SubElement( xml_, 'list_of_recipes' )
-compartments_ = etree.SubElement( xml_, 'list_of_compartments' )
-species_ = etree.SubElement(xml_, 'list_of_species' )
-model_ = etree.SubElement( xml_, 'model' )
+# globals_ = etree.SubElement( xml_, 'list_of_parameters' )
+# recipes_ = etree.SubElement( xml_, 'list_of_recipes' )
+# compartments_ = etree.SubElement( xml_, 'list_of_compartments' )
+# species_ = etree.SubElement(xml_, 'list_of_species' )
+# model_ = etree.SubElement( xml_, 'model' )
 
 def add_variable( tokens, **kwargs):
     var = etree.Element( 'variable' )
@@ -51,8 +51,9 @@ def add_recipe( tokens, **kwargs):
     nameElem.text = tokens[1]
     # Now time to add other xml elements into recipe tree.
     for x in tokens:
-        if isinstance(x, etree.Element ):
+        if isinstance(x, etree._Element ):
             recipe.append( x )
+    xml_.append( recipe )
     return recipe
 
 def add_reaction_declaration( tokens, **kwargs ):
@@ -79,6 +80,26 @@ def add_reaction_instantiation( tokens, **kwargs ):
         reac.attrib['id'] = r
     return reac
 
+def add_recipe_instance( tokens, **kwargs ):
+    print( '[INFO] Adding an instance of reaction.' )
+    recipeInst = etree.Element( 'recipe_instance' )
+    recipeInst.attrib['instance_of'] = tokens[0]
+    recipeInst.text = tokens[1]
+    return recipeInst
+
+
+##
+# @brief Main parser function 
+#
+# @param tokens. List of tokens.
+# @param kwargs. Dictionary of arguments.
+#
+# @return Return the AST in XML.
+def parser_main( tokens, **kwargs ):
+    global xml_
+    print tokens
+    return xml_
+
 ##
 # @brief Add a compartment to XML AST.
 #
@@ -87,26 +108,42 @@ def add_reaction_instantiation( tokens, **kwargs ):
 #
 # @return 
 def add_compartment( tokens, **kwargs ):
+    global xml_
+    print( '[INFO] Adding compartment %s' % tokens )
     compt = etree.Element( 'compartment' )
+    comptName = etree.SubElement( compt, 'name' )
+    comptName.text = tokens[1]
+
+    comptGeom = etree.SubElement( compt, 'geometry' )
+    comptGeom.text = tokens[2]
+    for k, v in tokens[3]:
+        comptGeom.attrib[k] = v
+
+    # And append rest of the xml/
+    for x in tokens[4:]:
+        if isinstance( x, etree._Element ):
+            compt.append( x )
+    xml_.append( compt )
     return compt
 
 
 # YACML BNF.
-pIdentifier = pyparsing_common.identifier
 COMPT_BEGIN = Keyword("compartment")
 RECIPE_BEGIN = Keyword( "recipe" )
 HAS = Keyword("has").suppress()
 IS = Keyword( "is" ).suppress()
-END = Keyword("end") + Optional( pIdentifier )
 SPECIES = Keyword( "species" ) | Keyword( "pool" ) | Keyword( "enzyme" )
 REACTION = Keyword( "reaction" ) | Keyword( "reac" ) | Keyword( "enz_reac" )
-GEOMETRY = Keyword("cylinder") | Keyword( "cube" ) | Keyword( "Spine" )
+GEOMETRY = Keyword("cylinder") | Keyword( "cube" ) | Keyword( "spine" )
 VAR = Keyword( "var" ) 
 CONST = Keyword( "const" ) 
 BUFFERED = Keyword( "buffered" ).setParseAction( lambda x: 'true' )
+END = Keyword("end")
 
-pComptName = pIdentifier
-pSpeciesName = pIdentifier
+anyKeyword = COMPT_BEGIN | RECIPE_BEGIN | HAS | IS | SPECIES | REACTION \
+        | GEOMETRY | VAR | CONST | BUFFERED | END
+
+# literals.
 pEOS = Literal( ";" ).suppress()
 LBRAC = Literal("[").suppress()
 RBRAC = Literal("]").suppress()
@@ -116,6 +153,15 @@ EQUAL = Literal('=').suppress()
 RREAC = Literal( "->" ).suppress()
 LREAC = Literal( "<-" ).suppress()
 
+anyLiteral = pEOS | LBRAC | RREAC | LCBRAC | RCBRAC | EQUAL | RREAC | LREAC
+
+pIdentifier = pyparsing_common.identifier
+# Make sure no keyword is matched as identifier.
+pIdentifier.ignore( anyKeyword )
+
+
+pComptName = pIdentifier
+pSpeciesName = pIdentifier
 pNumVal = pyparsing_common.numeric \
         | pyparsing_common.integer \
         | pyparsing_common.number | Regex( r'\.\d+' )
@@ -166,13 +212,18 @@ pRecipeName = pIdentifier
 
 # Recipe instantiation expression
 pRecipeType = pIdentifier 
-pInstExpr = pRecipeType + pRecipeName + END
+pRecipeInstExpr = pRecipeType + pRecipeName + pEOS
+pRecipeInstExpr.setParseAction( add_recipe_instance )
+
+# Geometry of compartment.
+pGeometry = GEOMETRY + Optional( pKeyValList, [] )
 
 # Valid YAXML expression
-pYACMLExpr = pSpeciesExpr | pReacExpr | pVariableExpr | pInstExpr
-pGeometry = GEOMETRY + Optional( pKeyValList )
+pYACMLExpr = pSpeciesExpr | pReacExpr | pVariableExpr | pRecipeInstExpr
 
-# Compartment 
+##
+# @brief Compartment can have reactions, species, or instance of other recipe.
+# Compartment also have solver, geometry and diffusion.
 pCompartmentBody = OneOrMore( pYACMLExpr )
 pCompartment = COMPT_BEGIN + pComptName + IS + pGeometry + HAS + pCompartmentBody + END
 pCompartment.setParseAction( add_compartment )
@@ -182,5 +233,23 @@ pRecipeBody = OneOrMore( pYACMLExpr )
 pRecipe =  RECIPE_BEGIN + pRecipeName + IS  + pRecipeBody + END 
 pRecipe.setParseAction( add_recipe )
 
-yacmlBNF_ = OneOrMore( pRecipe | pCompartment  ) 
+# Model
+# A model can have list of compartments instances. Solver, runtime and other
+# information. It can also have plot list but it should not be a part of YACML.
+
+pComptType = pIdentifier 
+pComptInstName = pIdentifier 
+pComptInst = pComptType + pComptInstName
+
+# TODO
+pCrossComptReactions = pIdentifier
+
+# TODO
+pModelStmt = pIdentifier + EQUAL + pIdentifier
+pModel = pComptInst | pCrossComptReactions | pModelStmt
+
+yacmlBNF_ = OneOrMore( pRecipe | pCompartment | pModel ) 
+# yacmlBNF_ = OneOrMore( pCompartment )
+yacmlBNF_.setParseAction( parser_main )
 yacmlBNF_.ignore( javaStyleComment )
+# yacmlBNF_.setDebug( )

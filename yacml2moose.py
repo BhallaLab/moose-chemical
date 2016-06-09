@@ -24,7 +24,7 @@ from utils import expression as _expr
 import notify as warn
 import config
 from utils import typeclass as tc
-import lxml.etree as etree
+import xml.etree.cElementTree as etree
 # from utils.helper import *
 logger_ = config.logger_
 
@@ -63,10 +63,14 @@ def replace_in_expr(frm, to, expr):
 def get_path_of_node(moose_compt, name):
     return "%s/%s" % (moose_compt.path, name)
 
+##
+# @brief Load yacml XML model into MOOSE.
+#
+# @param xml Input model AST in XML.
+#
+# @return  Root path of model in MOOSE, /yacml.
 def load( xml ):
-    for e in xml:
-        print e.tostring( )
-        print e
+    print xml
 
 class DotModel():
     '''

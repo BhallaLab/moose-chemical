@@ -19,6 +19,7 @@ import yparser.bnf as bnf
 import yparser.pre_processor
 import moose
 import moose.utils as mu
+import lxml.etree as etree
 
 logger_ = config.logger_
 
@@ -42,6 +43,8 @@ def loadYACML(yacml_file, **kwargs):
     :param **kwargs:
     """
     xml = yp.parse( yacml_file )
+    with open( '%s.xml' % yacml_file, 'w' ) as f:
+        f.write( etree.tostring( xml, pretty_print = True ) )
     yacml2moose.load( xml )
     quit( )
 

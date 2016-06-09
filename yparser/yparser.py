@@ -29,7 +29,7 @@ def parse_text( text ):
 def parse( filename ):
     print( '[INFO] Parsing %s' % filename )
     data = bnf.yacmlBNF_.parseFile( filename )
-    return data
+    return data[0]
 
 def remove_comments( text ):
     text = re.sub( r'\/\*.+?\*\/', '', text, flags = re.DOTALL )
