@@ -21,14 +21,20 @@ import utils.typeclass as tc
 # Function to generate graph.
 xml_ = etree.Element( 'yacml' )
 
+globals_ = {}
+
 def add_variable( tokens, **kwargs):
     var = etree.Element( 'variable' )
-    constExpr, keyValList = tokens
+    constExpr, (key, val) = tokens
     var.attrib['type'] = constExpr
-    key = etree.SubElement( var, 'name' )
-    val = etree.SubElement( var, 'value' )
-    key.text = keyValList[0]
-    val.text = keyValList[1]
+    var.attrib['name'] = key
+    try:
+        var.text = str( eval( val ) )
+        var.attrib['is_reduced'] = 'true' 
+    except Exception as e:
+        print( 'Failed to reduce %s' % e  )
+        var.text = val
+        var.attrib['is_reduced'] = 'false'
     return var
 
 def add_species( tokens, **kwargs ):
@@ -141,8 +147,14 @@ def add_compartment( tokens, **kwargs ):
 
     comptGeom = etree.SubElement( compt, 'geometry' )
     comptGeom.text = tokens[2]
+
     for k, v in tokens[3]:
-        comptGeom.attrib[k] = v
+        elem = etree.SubElement( comptGeom, 'variable' )
+        elem.attrib['name'] = k
+        try:
+            elem.text = eval( v )
+        except Exception as e:
+            elem.text = v
 
     # And append rest of the xml/
     for x in tokens[4:]:
@@ -210,7 +222,7 @@ pNumVal.setParseAction( lambda x: str(x[0]) )
 
 # Parser for key = value expression.
 pValue = pNumVal | pIdentifier | quotedString 
-quotedString.setParseAction( lambda x: x[0].replace('"', '') )
+quotedString.setParseAction( lambda x: (''.join(x)).replace('"', '') )
 
 pKeyVals = Group( pIdentifier + EQUAL + pValue )
 
