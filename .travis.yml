@@ -10,7 +10,6 @@ install:
   - sudo apt-get update
   - sudo apt-get install moose
   - sudo apt-get install python-pip python-networkx
-  - pip install pygraphviz --user
 
 script:
     -  echo "Doing nothing"

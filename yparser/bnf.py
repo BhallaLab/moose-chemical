@@ -109,6 +109,12 @@ def add_compt_instance( tokens, **kwargs ):
             instXml.attrib[x[0]] = x[1]
     return instXml
 
+def add_simulator( tokens, **kwargs ):
+    simXml = etree.Element( 'simulator' )
+    simXml.text = tokens[1]
+    for k, v in tokens[2]:
+        simXml.attrib[k] = v
+    return simXml
 
 ##
 # @brief Add a compartment to XML AST.
@@ -162,10 +168,12 @@ VAR = Keyword( "var" )
 CONST = Keyword( "const" ) 
 BUFFERED = Keyword( "buffered" ).setParseAction( lambda x: 'true' )
 END = Keyword("end")
+SIMULATOR = Keyword( "simulator" )
 
 anyKeyword = COMPT_BEGIN | RECIPE_BEGIN | MODEL_BEGIN \
         | HAS | IS | SPECIES | REACTION \
-        | GEOMETRY | VAR | CONST | BUFFERED | END
+        | GEOMETRY | VAR | CONST | BUFFERED | END \
+        | SIMULATOR
 
 # literals.
 pEOS = Literal( ";" ).suppress()
@@ -261,13 +269,17 @@ pRecipe.setParseAction( add_recipe )
 # A model can have list of compartments instances. Solver, runtime and other
 # information. It can also have plot list but it should not be a part of YACML.
 
+pSimulatorName = pIdentifier
+pSimulator = SIMULATOR + pSimulatorName + Optional( pKeyValList ) + pEOS
+pSimulator.setParseAction( add_simulator )
+
 pComptType = pIdentifier 
 pComptInstName = pIdentifier 
 pComptInst = pComptType + pComptInstName + pEOS
 pComptInst.setParseAction( add_compt_instance )
 
 pModelName = pIdentifier
-pModelStmt = ( pComptInst | pKeyVals + pEOS )
+pModelStmt = ( pComptInst | pSimulator )
 
 pModel = MODEL_BEGIN + pModelName + HAS +  OneOrMore( pModelStmt ) + END
 pModel.setParseAction( add_model )
