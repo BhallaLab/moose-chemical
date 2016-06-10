@@ -92,7 +92,7 @@ def add_model( tokens, **kwargs ):
         if isinstance(t, etree._Element ):
             modelXml.append( t )
         else:
-            print('[WARN] Unhandled token found %s' % t )
+            modelXml.attrib[t[0]] = t[1]
 
     xml_.append( modelXml )
 
