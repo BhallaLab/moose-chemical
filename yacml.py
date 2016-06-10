@@ -16,6 +16,7 @@ import yacml2moose
 import config
 import yparser.yparser as yp
 import yparser.bnf as bnf
+import yparser.ast_processor as astp
 import yparser.pre_processor
 import moose
 import moose.utils as mu
@@ -42,10 +43,15 @@ def loadYACML(yacml_file, **kwargs):
     :param modelFile: Path of model.
     :param **kwargs:
     """
-    xml = yp.parse( yacml_file )
+    ast = yp.parse( yacml_file )
     with open( '%s.xml' % yacml_file, 'w' ) as f:
-        f.write( etree.tostring( xml, pretty_print = True ) )
-    yacml2moose.load( xml )
+        f.write( etree.tostring( ast, pretty_print = True ) )
+
+    flattenAST = astp.flatten( ast )
+    with open( '%s_rewritten.xml' % yacml_file, 'w' ) as f:
+        f.write( etree.tostring( flattenAST, pretty_print = True ) )
+
+    newXml = yacml2moose.load( flattenAST )
     quit( )
 
     networkxG = yacml_to_networkx( yacml_file )

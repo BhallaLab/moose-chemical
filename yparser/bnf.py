@@ -42,8 +42,7 @@ def add_species( tokens, **kwargs ):
 
 def add_recipe( tokens, **kwargs):
     recipe = etree.Element( 'recipe' )
-    nameElem = etree.SubElement( recipe, 'name' )
-    nameElem.text = tokens[1]
+    recipe.attrib['id'] = tokens[1]
     # Now time to add other xml elements into recipe tree.
     for x in tokens:
         if isinstance(x, etree._Element ):
@@ -53,18 +52,28 @@ def add_recipe( tokens, **kwargs):
 
 def add_reaction_declaration( tokens, **kwargs ):
     reacId = etree.Element( 'reaction_declaration' )
-    for x in tokens[2]:
-        key, val = x
-        reacId.attrib[key] = val
+    reacId.attrib['id'] = tokens[1]
+    for key, val in tokens[2]:
+        if key.lower() in [ 'kf', 'kb', 'numkf', 'numkb', 'km' ]:
+            elem = etree.SubElement( reacId, key )
+            elem.text = val
+        else:
+            elem = etree.SubElement( reacId, 'variable' )
+            elem.attrib['name'] = key
+            elem.text = val
     return reacId
 
 def add_reaction_instantiation( tokens, **kwargs ):
     reac = etree.Element( 'reaction' )
     subsList, r, prdList = tokens
     for sub in subsList:
-        sub = etree.SubElement( reac, 'substrate' )
+        subXml = etree.SubElement( reac, 'substrate' )
+        subXml.attrib['stoichiometric_number'] = sub[0]
+        subXml.text = sub[1]
     for prd in prdList:
-        prd = etree.SubElement( reac, 'product' )
+        prdXml = etree.SubElement( reac, 'product' )
+        prdXml.attrib['stoichiometric_number'] = prd[0]
+        prdXml.text = prd[1]
     
     # A simple identifier means reaction is declared elsewhere, a list means
     # that key, value pairs are declared.
@@ -72,7 +81,7 @@ def add_reaction_instantiation( tokens, **kwargs ):
         for k, v in r:
             reac.attrib[k] = v
     else:
-        reac.attrib['id'] = r
+        reac.attrib['instance_of'] = r
     return reac
 
 def add_recipe_instance( tokens, **kwargs ):
@@ -200,7 +209,7 @@ pNumVal = pyparsing_common.numeric \
 pNumVal.setParseAction( lambda x: str(x[0]) )
 
 # Parser for key = value expression.
-pValue = ( pNumVal | pIdentifier | quotedString )
+pValue = pNumVal | pIdentifier | quotedString 
 quotedString.setParseAction( lambda x: x[0].replace('"', '') )
 
 pKeyVals = Group( pIdentifier + EQUAL + pValue )
