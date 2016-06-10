@@ -200,7 +200,8 @@ pNumVal = pyparsing_common.numeric \
 pNumVal.setParseAction( lambda x: str(x[0]) )
 
 # Parser for key = value expression.
-pValue = ( pNumVal | pIdentifier | quotedString() )
+pValue = ( pNumVal | pIdentifier | quotedString )
+quotedString.setParseAction( lambda x: x[0].replace('"', '') )
 
 pKeyVals = Group( pIdentifier + EQUAL + pValue )
 
