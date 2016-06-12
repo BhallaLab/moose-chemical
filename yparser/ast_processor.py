@@ -28,7 +28,6 @@ def find_recipe( doc, recipe_id ):
     return recipe[0]
 
 def find_reaction( rootXML, reaction_id ):
-    global flattenedAST_
     rXML = rootXML.xpath( '//reaction_declaration[@id="%s"]' % reaction_id )
     if not rXML:
         msg = 'Could not find any reaction with name %s' % reaction_id
@@ -37,8 +36,16 @@ def find_reaction( rootXML, reaction_id ):
     assert len( rXML ) == 1, 'Found more the 1 reaction with id %s' % reaction_id
     return rXML[0]
 
+def find_compartment( rootXML, compt_id ):
+    cXML = rootXML.xpath( '//compartment[@id="%s"]' % compt_id )
+    if not cXML:
+        msg = 'Could not find any reaction with name %s' % compt_id
+        msg +=  '\t I cannot continue ' 
+        raise NameError( msg )
+    assert len( cXML ) == 1, 'Found more the 1 reaction with id %s' % compt_id
+    return cXML[0]
+
 def replace_all( from_list, reduce_list ):
-    # Reduce 
     somethingToReplace = False
     while from_list:
         r = from_list.pop()
@@ -54,14 +61,14 @@ def replace_all( from_list, reduce_list ):
                     pass
     return somethingToReplace
 
-def local_variables( recipe_xml, doc, others = [] ):
+def replace_local_variables( recipe_xml, doc, others = [] ):
     print( '[DEBUG] Replacing local variables' )
     reduced = recipe_xml.xpath( 'variable[@is_reduced="true"]' )
     unreduced = recipe_xml.xpath( '//variable[@is_reduced="false"]' )
     localVars = reduced + others
     somethingToReplace = replace_all( reduced + others, unreduced )
     if somethingToReplace:
-        local_variables( recipe_xml, doc, others )
+        replace_local_variables( recipe_xml, doc, others )
 
 def flatten_compartment_expression( compt_xml ):
     # Flatten as many expression as we can.
@@ -73,6 +80,9 @@ def flatten_compartment_expression( compt_xml ):
     somethingToReplace = replace_all( geomVar + reducedVars, unreducedVars )
     if somethingToReplace:
         flatten_compartment_expression( compt_xml )
+
+def flatten_reaction( reac_xml ):
+    variables = reac_xml.xpath( 'variable' )
 
 
 ##
@@ -86,6 +96,10 @@ def flatten_compartment( comptXML, doc ):
     global flattenedAST_
     # Replace instance of each recipe by inline xml.
     flattenComptXML = etree.SubElement( flattenedAST_, 'compartment' )
+
+    # Attach the instance_of
+    for atb in comptXML.attrib:
+        flattenComptXML.attrib[ atb ] = comptXML.attrib[ atb ]
 
     # Attach geometry
     for geomXML in comptXML.xpath( 'geometry' ):
@@ -106,7 +120,7 @@ def flatten_compartment( comptXML, doc ):
         nameElem = etree.SubElement( netXML, 'name' )
         nameElem.text = recipeI.text
         [ netXML.append( deepcopy(c) ) for c in recipe ]
-        flatten_compartment_expression( flattenComptXML )
+        # flatten_compartment_expression( flattenComptXML )
 
 ##
 # @brief Flatten the declaration of recipe. Replace all the local variables.
@@ -116,13 +130,32 @@ def flatten_compartment( comptXML, doc ):
 #
 # @return 
 def flatten_recipe( recipeXML, doc ):
-    local_variables( recipeXML, doc )
-    reactionsWithId = recipeXML.xpath( '//reaction[@instance_of]' )
-    for reac in reactionsWithId:
+    replace_local_variables( recipeXML, doc )
+    reactionInstances = recipeXML.xpath( '//reaction[@instance_of]' )
+    for reac in reactionInstances:
         instOf = reac.attrib['instance_of']
         rXML = find_reaction( recipeXML, instOf )
-        [ reac.append( elem ) for elem in rXML ]
-        del reac.attrib['instance_of']
+        [ reac.append( deepcopy( elem ) ) for elem in rXML ]
+        flatten_reaction( reac )
+
+##
+# @brief Flatten a given model XML element.
+#
+# @param model_xml
+#
+# @return XML element representing model.
+def flatten_model( model_xml, ast ):
+    global flattenedAST_
+    yacmlXML = etree.Element( 'yacml' )
+    modelXML = etree.SubElement( flattenedAST_, 'model' )
+    for compt in model_xml.xpath( 'compartment_instance' ):
+        instName = compt.text
+        instOf = compt.attrib['instance_of']
+        comptInst = find_compartment( flattenedAST_, instOf )
+        comptInst.attrib['name'] = instName
+        comptInst.attrib['instance_of'] = comptInst.attrib.pop('id')
+        yacmlXML.append( deepcopy( comptInst ) )
+    return yacmlXML
 
 
 ##
@@ -139,4 +172,8 @@ def flatten( ast ):
     [ flatten_recipe( r, ast ) for r in recipes ]
     compts = ast.xpath( '/yacml/compartment' )
     [ flatten_compartment( c, ast ) for c in compts ]
-    return flattenedAST_
+
+    # And finally flatten the model. This is the last 
+    model = ast.find( 'model' )
+    flattenModel = flatten_model( model, ast )
+    return flattenModel

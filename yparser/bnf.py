@@ -142,8 +142,7 @@ def add_compartment( tokens, **kwargs ):
     global xml_
     print( '[INFO] Adding compartment %s' % tokens )
     compt = etree.Element( 'compartment' )
-    comptName = etree.SubElement( compt, 'name' )
-    comptName.text = tokens[1]
+    compt.attrib['id'] = tokens[1]
 
     comptGeom = etree.SubElement( compt, 'geometry' )
     comptGeom.text = tokens[2]
