@@ -147,14 +147,17 @@ def flatten_recipe( recipeXML, doc ):
 def flatten_model( model_xml, ast ):
     global flattenedAST_
     yacmlXML = etree.Element( 'yacml' )
-    modelXML = etree.SubElement( flattenedAST_, 'model' )
+    modelXML = etree.SubElement( yacmlXML, 'model' )
+    for atb in model_xml.attrib:
+        modelXML.attrib[atb] = model_xml.attrib[ atb ]
+
     for compt in model_xml.xpath( 'compartment_instance' ):
         instName = compt.text
         instOf = compt.attrib['instance_of']
         comptInst = find_compartment( flattenedAST_, instOf )
         comptInst.attrib['name'] = instName
         comptInst.attrib['instance_of'] = comptInst.attrib.pop('id')
-        yacmlXML.append( deepcopy( comptInst ) )
+        modelXML.append( deepcopy( comptInst ) )
     return yacmlXML
 
 

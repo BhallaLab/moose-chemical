@@ -101,14 +101,10 @@ def add_model( tokens, **kwargs ):
     global xml_
     print( '[INFO] Adding top-level model ' )
     modelXml = etree.Element( 'model' )
-    nameXml = etree.SubElement( modelXml, 'name' )
-    nameXml.text = tokens[1]
+    modelXml.attrib[ 'name' ] = tokens[1]
     for t in tokens[2:]:
         if isinstance(t, etree._Element ):
             modelXml.append( t )
-        else:
-            modelXml.attrib[t[0]] = t[1]
-
     xml_.append( modelXml )
 
 def add_compt_instance( tokens, **kwargs ):
@@ -145,7 +141,7 @@ def add_compartment( tokens, **kwargs ):
     compt.attrib['id'] = tokens[1]
 
     comptGeom = etree.SubElement( compt, 'geometry' )
-    comptGeom.text = tokens[2]
+    comptGeom.attrib['shape'] = tokens[2]
 
     for k, v in tokens[3]:
         elem = etree.SubElement( comptGeom, 'variable' )
@@ -187,7 +183,7 @@ GEOMETRY = Keyword("cylinder") | Keyword( "cube" ) | Keyword( "spine" )
 VAR = Keyword( "var" ) 
 CONST = Keyword( "const" ) 
 BUFFERED = Keyword( "buffered" ).setParseAction( lambda x: 'true' )
-END = Keyword("end")
+END = Keyword("end").suppress()
 SIMULATOR = Keyword( "simulator" )
 
 anyKeyword = COMPT_BEGIN | RECIPE_BEGIN | MODEL_BEGIN \
