@@ -39,10 +39,15 @@ def add_variable( tokens, **kwargs):
 
 def add_species( tokens, **kwargs ):
     sp = etree.Element( 'species' )
-    sp.text = tokens[2]
+    sp.attrib['name'] = tokens[2]
     attribs = tokens[3]
     for k, v in attribs:
-        sp.attrib[ k ] = str(v)
+        if k.lower() in [ 'n', 'conc' ]:
+            paramXml = etree.SubElement( sp, 'parameter' )
+            paramXml.attrib['name'] = k
+            paramXml.text = v
+        else:
+            sp.attrib[ k ] = str(v)
     sp.attrib['is_buffered'] = tokens[0]
     return sp
 
@@ -61,7 +66,8 @@ def add_reaction_declaration( tokens, **kwargs ):
     reacId.attrib['id'] = tokens[1]
     for key, val in tokens[2]:
         if key.lower() in [ 'kf', 'kb', 'numkf', 'numkb', 'km' ]:
-            elem = etree.SubElement( reacId, key )
+            elem = etree.SubElement( reacId, 'parameter' )
+            elem.attrib['name'] = key
             elem.text = val
         else:
             elem = etree.SubElement( reacId, 'variable' )

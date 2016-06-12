@@ -117,8 +117,7 @@ def flatten_compartment( comptXML, doc ):
         recipe = find_recipe( doc, instOf )
         netXML = etree.SubElement( flattenComptXML, 'chemical_reaction_subnetwork' )
         netXML.attrib['type'] = instOf
-        nameElem = etree.SubElement( netXML, 'name' )
-        nameElem.text = recipeI.text
+        netXML.attrib['name'] = recipeI.text
         [ netXML.append( deepcopy(c) ) for c in recipe ]
         # flatten_compartment_expression( flattenComptXML )
 
@@ -179,4 +178,5 @@ def flatten( ast ):
     # And finally flatten the model. This is the last 
     model = ast.find( 'model' )
     flattenModel = flatten_model( model, ast )
+
     return flattenModel
