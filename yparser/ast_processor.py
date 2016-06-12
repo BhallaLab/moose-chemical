@@ -81,9 +81,6 @@ def flatten_compartment_expression( compt_xml ):
     if somethingToReplace:
         flatten_compartment_expression( compt_xml )
 
-def flatten_reaction( reac_xml ):
-    variables = reac_xml.xpath( 'variable' )
-
 
 ##
 # @brief Flatten a compartment.
@@ -135,7 +132,6 @@ def flatten_recipe( recipeXML, doc ):
         instOf = reac.attrib['instance_of']
         rXML = find_reaction( recipeXML, instOf )
         [ reac.append( deepcopy( elem ) ) for elem in rXML ]
-        flatten_reaction( reac )
 
 ##
 # @brief Flatten a given model XML element.
@@ -170,8 +166,8 @@ def flatten_model( model_xml, ast ):
 def flatten( ast ):
     global flattenedAST_
     # Rewrite AST.
-    recipes = ast.xpath( '/yacml/recipe' )
-    [ flatten_recipe( r, ast ) for r in recipes ]
+    # recipes = ast.xpath( '/yacml/recipe' )
+    # [ flatten_recipe( r, ast ) for r in recipes ]
     compts = ast.xpath( '/yacml/compartment' )
     [ flatten_compartment( c, ast ) for c in compts ]
 

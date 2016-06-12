@@ -23,18 +23,20 @@ xml_ = etree.Element( 'yacml' )
 
 globals_ = {}
 
+def attach_val_with_reduction( elem, val ):
+    try:
+        elem.text = str( eval( val ) )
+        elem.attrib['is_reduced'] = 'true'
+    except Exception as e:
+        elem.text =  val 
+        elem.attrib['is_reduced'] = 'false'
+
 def add_variable( tokens, **kwargs):
     var = etree.Element( 'variable' )
     constExpr, (key, val) = tokens
     var.attrib['type'] = constExpr
     var.attrib['name'] = key
-    try:
-        var.text = str( eval( val ) )
-        var.attrib['is_reduced'] = 'true' 
-    except Exception as e:
-        print( 'Failed to reduce %s' % e  )
-        var.text = val
-        var.attrib['is_reduced'] = 'false'
+    attach_val_with_reduction( var, val )
     return var
 
 def add_species( tokens, **kwargs ):
@@ -45,9 +47,8 @@ def add_species( tokens, **kwargs ):
         if k.lower() in [ 'n', 'conc' ]:
             paramXml = etree.SubElement( sp, 'parameter' )
             paramXml.attrib['name'] = k
+            attach_val_with_reduction( paramXml, v )
             paramXml.text = v
-        else:
-            sp.attrib[ k ] = str(v)
     sp.attrib['is_buffered'] = tokens[0]
     return sp
 
@@ -68,11 +69,11 @@ def add_reaction_declaration( tokens, **kwargs ):
         if key.lower() in [ 'kf', 'kb', 'numkf', 'numkb', 'km' ]:
             elem = etree.SubElement( reacId, 'parameter' )
             elem.attrib['name'] = key
-            elem.text = val
+            attach_val_with_reduction( elem, val )
         else:
             elem = etree.SubElement( reacId, 'variable' )
             elem.attrib['name'] = key
-            elem.text = val
+            attach_val_with_reduction( elem, val )
     return reacId
 
 def add_reaction_instantiation( tokens, **kwargs ):
@@ -152,10 +153,7 @@ def add_compartment( tokens, **kwargs ):
     for k, v in tokens[3]:
         elem = etree.SubElement( comptGeom, 'variable' )
         elem.attrib['name'] = k
-        try:
-            elem.text = eval( v )
-        except Exception as e:
-            elem.text = v
+        attach_val_with_reduction( elem, v )
 
     # And append rest of the xml/
     for x in tokens[4:]:
