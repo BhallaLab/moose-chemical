@@ -14,6 +14,7 @@ __email__            = "dilawars@ncbs.res.in"
 __status__           = "Development"
 
 
+import __future__
 import networkx.drawing.nx_agraph as nxAG
 import moose
 import moose.print_utils as pu
@@ -43,6 +44,22 @@ def get_ids( expr ):
         if isinstance( e, ast.Name ):
             ids.append( e.id )
     return ids
+
+##
+# @brief Eval the expression using python. The __future__ related compile flags
+# make sure that 1/3 is reduced 0.33333 instead of 0.
+#
+# @param expr
+#
+# @return Reduced value as string.
+def eval_expr( expr ):
+    try:
+        val = eval( compile( expr ), '<string>'
+                , 'eval', __future__.division.compile_flags 
+                )
+    except Exception as e:
+        val = expr 
+    return str(val)
 
 
 def helper_constant_propagation( text, reduced, unreduced ):
@@ -87,7 +104,7 @@ def replace_variable_value_from_dict( elem, var, var_dict ):
     if var in var_dict:
         elem.text = elem.text.replace(var, var_dict[var] )
         try:
-            elem.text = str( eval( elem.text ) )
+            elem.text = eval_expr( elem.text ) 
             elem.attrib[ 'is_reduced' ] = 'true'
         except Exception as e:
             pass
@@ -111,16 +128,16 @@ def replace_variable_value( elem, local_vars, global_vars ):
 
 
 def do_constant_propagation_on_elem( elem ):
-    validElems = [ 'variable', 'reaction' ]
-    if elem.tag not in validElems:
-        return
+    validElems = [ 'variable', 'reaction', 'species' ]
+    # if elem.tag not in validElems:
+        # return
 
     if elem.attrib.get('is_reduced', 'false') == 'true':
         return
 
     globalVars = get_global_variables( elem )
     localVars = get_local_variables( elem )
-    if elem.tag == 'variable':
+    if elem.tag in [ 'variable', 'parameter' ]:
         # A variable may refer to another variable in its expression. It may
         # also refer to another global variable.
         print( 'Global variable  %s = %s' % ( elem.attrib['name'], globalVars ))
@@ -157,6 +174,8 @@ def load( xml ):
     # Before loading AST xml into MOOSE, replace each variable by its value
     # whenever posiible.
     do_constant_propagation( xml )
-    with open( '/tmp/yacml.xml', 'w' ) as f:
+    outfile = '/tmp/yacml.xml' 
+    with open( outfile, 'w' ) as f:
         f.write( etree.tostring( xml, pretty_print = True ) )
+    print( '[INFO] Flattened xml is written to %s' % outfile )
     return xml
