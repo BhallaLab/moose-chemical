@@ -36,8 +36,8 @@ def get_ids( expr ):
     try:
         tree = ast.parse( expr )
     except Exception as e:
-        logger_.debug( 'Expression not a valid python expression' )
-        logger_.debug( '\t Expression was %s' % expr )
+        logger_.warn( 'Expression not a valid python expression' )
+        logger_.warn( '\t Expression was %s' % expr )
         return []
     ids = []
     for e in ast.walk( tree ):
@@ -69,10 +69,10 @@ def helper_constant_propagation( text, reduced, unreduced ):
     for iden in ids:
         # replace from the unreduced first.
         if iden in unreduced:
-            print( '== Replacing %s' % iden )
+            logger_.debug( '== Replacing %s' % iden )
             newText = newText.replace( iden, unreduced[iden] )
         elif iden in reduced:
-            print( '== Replacing %s' % iden )
+            logger_.debug( '== Replacing %s' % iden )
             newText = newText.replace( iden, reduced[iden] )
     
     # If no more changes are possible, return the result else call the function
@@ -83,7 +83,7 @@ def helper_constant_propagation( text, reduced, unreduced ):
         return helper_constant_propagation( newText, reduced, unreduced )
 
 def get_global_variables( elem, reduced = {}, unreduced = {} ):
-    # Get the compartment geometry paramters.
+    # Get the compartwarn geometry paramters.
     while elem.getparent() is not None:
         elem = elem.getparent()
         ur, r = get_local_variables( elem )
@@ -140,8 +140,8 @@ def do_constant_propagation_on_elem( elem ):
     if elem.tag in [ 'variable', 'parameter' ]:
         # A variable may refer to another variable in its expression. It may
         # also refer to another global variable.
-        print( 'Global variable  %s = %s' % ( elem.attrib['name'], globalVars ))
-        print( 'Local variable %s = %s' % ( elem.attrib['name'], localVars )) 
+        logger_.debug( 'Global variable  %s = %s' % ( elem.attrib['name'], globalVars ))
+        logger_.debug( 'Local variable %s = %s' % ( elem.attrib['name'], localVars )) 
         elem = replace_variable_value( elem, localVars, globalVars )
 
 ##
@@ -164,6 +164,13 @@ def do_constant_propagation( tree ):
         elem = listOfElems.pop( )
         do_constant_propagation_on_elem( elem )
 
+def load_xml( xml ):
+    # First get all the compartments and create them.
+    for c in xml.xpath( '/yacml/model/compartment' ):
+        print c
+
+    quit( )
+
 ##
 # @brief Load yacml XML model into MOOSE.
 #
@@ -174,8 +181,9 @@ def load( xml ):
     # Before loading AST xml into MOOSE, replace each variable by its value
     # whenever posiible.
     do_constant_propagation( xml )
+    load_xml( xml )
     outfile = '/tmp/yacml.xml' 
     with open( outfile, 'w' ) as f:
         f.write( etree.tostring( xml, pretty_print = True ) )
-    print( '[INFO] Flattened xml is written to %s' % outfile )
+    logger_.debug( '[INFO] Flattened xml is written to %s' % outfile )
     return xml

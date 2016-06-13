@@ -15,6 +15,7 @@ __status__           = "Development"
 
 import lxml.etree as etree
 from copy import deepcopy
+from config import logger_
 
 flattenedAST_ = etree.Element( 'yacml' )
 
@@ -37,12 +38,14 @@ def find_reaction( rootXML, reaction_id ):
     return rXML[0]
 
 def find_compartment( rootXML, compt_id ):
-    cXML = rootXML.xpath( '//compartment[@id="%s"]' % compt_id )
+    cXML = rootXML.xpath( 'compartment[@id="%s"]' % compt_id )
     if not cXML:
-        msg = 'Could not find any reaction with name %s' % compt_id
+        msg = 'Could not find any compartment with name %s' % compt_id
         msg +=  '\t I cannot continue ' 
         raise NameError( msg )
-    assert len( cXML ) == 1, 'Found more the 1 reaction with id %s' % compt_id
+
+    assert len( cXML ) == 1, 'Found more the 1 compartment with id %s' % compt_id
+    logger_.debug( 'Found declaration of compartment with type %s' % compt_id )
     return cXML[0]
 
 def replace_all( from_list, reduce_list ):
@@ -62,7 +65,7 @@ def replace_all( from_list, reduce_list ):
     return somethingToReplace
 
 def replace_local_variables( recipe_xml, doc, others = [] ):
-    print( '[DEBUG] Replacing local variables' )
+    logger_.debug( 'Replacing local variables' )
     reduced = recipe_xml.xpath( 'variable[@is_reduced="true"]' )
     unreduced = recipe_xml.xpath( '//variable[@is_reduced="false"]' )
     localVars = reduced + others
@@ -91,10 +94,9 @@ def flatten_compartment_expression( compt_xml ):
 # @return 
 def flatten_compartment( comptXML, doc ):
     global flattenedAST_
-    # Replace instance of each recipe by inline xml.
-    flattenComptXML = etree.SubElement( flattenedAST_, 'compartment' )
 
-    # Attach the instance_of
+    flattenComptXML = etree.SubElement( flattenedAST_, 'compartment' )
+    # Attach the attributes.
     for atb in comptXML.attrib:
         flattenComptXML.attrib[ atb ] = comptXML.attrib[ atb ]
 
@@ -109,7 +111,7 @@ def flatten_compartment( comptXML, doc ):
     # Fix the recipe instances.
     recipeInsts = comptXML.findall( 'recipe_instance' )
     for recipeI in recipeInsts:
-        print( '[INFO] Replacing recipe instance of %s' % recipeI.text )
+        logger_.info( 'Replacing recipe instance of %s' % recipeI.text )
         instOf = recipeI.attrib['instance_of']
         recipe = find_recipe( doc, instOf )
         netXML = etree.SubElement( flattenComptXML, 'chemical_reaction_subnetwork' )
@@ -146,12 +148,13 @@ def flatten_model( model_xml, ast ):
     for atb in model_xml.attrib:
         modelXML.attrib[atb] = model_xml.attrib[ atb ]
 
+    # The compartments are flattened and stored in flattenedAST_ 
     for compt in model_xml.xpath( 'compartment_instance' ):
         instName = compt.text
         instOf = compt.attrib['instance_of']
         comptInst = find_compartment( flattenedAST_, instOf )
         comptInst.attrib['name'] = instName
-        comptInst.attrib['instance_of'] = comptInst.attrib.pop('id')
+        comptInst.attrib['instance_of'] = comptInst.attrib['id']
         modelXML.append( deepcopy( comptInst ) )
     return yacmlXML
 
