@@ -17,6 +17,7 @@ from .pyparsing import *
 import lxml.etree as etree
 import lxml
 import utils.typeclass as tc
+import utils.helper as helper
 
 # Function to generate graph.
 xml_ = etree.Element( 'yacml' )
@@ -24,12 +25,7 @@ xml_ = etree.Element( 'yacml' )
 globals_ = {}
 
 def attach_val_with_reduction( elem, val ):
-    try:
-        elem.text = str( eval( val ) )
-        elem.attrib['is_reduced'] = 'true'
-    except Exception as e:
-        elem.text =  val 
-        elem.attrib['is_reduced'] = 'false'
+    elem.text, elem.attrib['is_reduced'] = helper.reduce_expr( val )
 
 def add_variable( tokens, **kwargs):
     var = etree.Element( 'variable' )
@@ -48,7 +44,11 @@ def add_species( tokens, **kwargs ):
             paramXml = etree.SubElement( sp, 'parameter' )
             paramXml.attrib['name'] = k
             attach_val_with_reduction( paramXml, v )
-            paramXml.text = v
+        else:
+            varXml  = etree.SubElement( sp, 'variable' )
+            varXml.attrib['name'] = k
+            attach_val_with_reduction( varXml, v )
+            
     sp.attrib['is_buffered'] = tokens[0]
     return sp
 
