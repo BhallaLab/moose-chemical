@@ -231,13 +231,18 @@ def load_species( species_xml, root_path ):
             set_pool_conc( pool, p, root_path )
     return p
 
+def load_reaction( reac_xml, root_xml ):
+    print( reac_xml )
+    logger_.info( 'Loading reaction %s' % reac_xml )
+
 
 def load_chemical_reactions_in_compartment( subnetwork, compt ):
     logger_.info( 'Loading chemical reaction network in compartment %s' % compt )
     netPath = '%s/%s' % ( compt.path, subnetwork.attrib['name'] )
     moose.Neutral( netPath )
     [ load_species( c, netPath ) for c in subnetwork.xpath('species' ) ]
-
+    print subnetwork.xpath( '/reaction' )
+    [ load_reaction( r, subnetwork ) for r in subnetwork.xpath('reaction') ]
 
 def load_xml( xml ):
     # First get all the compartments and create them.
@@ -247,10 +252,8 @@ def load_xml( xml ):
     compts = {}
     for c in xml.xpath( '/yacml/model/compartment' ):
         compts[c.attrib['name'] ] = compt = load_compartent( c, model )
-        [ load_chemical_reactions_in_compartment( x, compt )
-                for x in c.xpath( 'chemical_reaction_subnetwork' )
-                ]
-    quit( )
+        for x in c.xpath( 'chemical_reaction_subnetwork' ):
+            load_chemical_reactions_in_compartment( x, compt )
 
 ##
 # @brief Load yacml XML model into MOOSE.

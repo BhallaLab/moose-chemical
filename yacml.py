@@ -24,58 +24,15 @@ import lxml.etree as etree
 
 logger_ = config.logger_
 
-def yacml_to_networkx( yacml_file, **kwargs ):
-    """yacml_to_networkx Convert yacml model to equivalent networkx graph.
-
-    :param yacml_file: path of yacml file.
-    """
-    nxG = yp.create_graph( yacml_file, **kwargs )
-    pre_processor.pre_process( nxG )
-    return nxG
-
-def networkx2moose( nxg, **kwargs ):
-    model = yacml2moose.DotModel( nxg, **kwargs )
-    return model
-
-def loadYACML(yacml_file, **kwargs):
-    """loadYACML Load YACML model into MOOSE.
-
-    :param modelFile: Path of model.
-    :param **kwargs:
-    """
-    ast = yp.parse( yacml_file )
-    with open( '%s.xml' % yacml_file, 'w' ) as f:
-        f.write( etree.tostring( ast, pretty_print = True ) )
-
-    flattenAST = astp.flatten( ast )
-    with open( '%s_rewritten.xml' % yacml_file, 'w' ) as f:
-        f.write( etree.tostring( flattenAST, pretty_print = True ) )
-
-    newXml = yacml2moose.load( flattenAST )
-    quit( )
-
-    networkxG = yacml_to_networkx( yacml_file )
-    # Once graph is preprocess, load it in moose.
-    model = networkx2moose.load( networkxG, **kwargs)
-    return model
-
-def main(args):
+def loadModel( filename ):
     """Main entry function
     """
-    config.args_ = args
-    modelFile = args['model_file']
-    xml = yp.parse( modelFile )
+    xml = yp.parse( filename )
+    xml = astp.flatten( xml )
+    with open( '%s.xml' % filename, 'w' ) as f:
+        f.write( etree.tostring( xml, pretty_print = True ) ) 
+
     yacml2moose.load( xml )
-    quit()
-    if args['solver'] == 'moose':
-        model = yacml2moose.DotModel(modelFile)
-        model.run(args)
-        return model
-    elif args['solver'] == "scipy":
-        logger_.error("Solver scipy is still not supported")
-    else:
-        logger_.error("Invalid solver: %s " % args['solver'])
-    return None
 
 # if __name__ == '__main__':
 #     import argparse
