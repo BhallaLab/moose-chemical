@@ -15,7 +15,14 @@ __status__           = "Development"
 
 import __future__
 import ast
+import re
+import math
+
+# Bring imports from math to global namespace so that eval can use them.
+from math import *
 from config import logger_
+
+funcs = math.__dict__.keys() + [ 'fmod', 'rand', 'rand2' ]
 
 def to_bool(arg):
     if arg.lower() in [ "0", "false", "no" ]:
@@ -27,18 +34,30 @@ def to_float(string):
     string = string.replace('"', '')
     return float(eval(string))
 
+
+
 def get_ids( expr ):
-    try:
-        tree = ast.parse( expr )
-    except Exception as e:
-        logger_.warn( 'Expression not a valid python expression' )
-        logger_.warn( '\t Expression was %s' % expr )
-        logger_.warn( '\t Error during parsing %s' % e )
-        return []
+    # The expression might also have ite-expression of muparser.
+    itePat = re.compile( r'(.+?)\?(.+?)\:(.+)' )
+    m = itePat.match( expr )
+    if m:
+        exprs = m.group(1, 2, 3)
+    else:
+        exprs = [ expr ]
+
     ids = []
-    for e in ast.walk( tree ):
-        if isinstance( e, ast.Name ):
-            ids.append( e.id )
+    for expr in exprs:
+        try:
+            tree = ast.parse( expr )
+        except Exception as e:
+            logger_.warn( 'Expression not a valid python expression' )
+            logger_.warn( '\t Expression was %s' % expr )
+            logger_.warn( '\t Error during parsing %s' % e )
+            return []
+        for e in ast.walk( tree ):
+            if isinstance( e, ast.Name ):
+                if e.id not in funcs:
+                    ids.append( e.id )
     return ids
 
 
