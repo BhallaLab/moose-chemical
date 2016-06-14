@@ -18,11 +18,14 @@ import lxml.etree as etree
 import lxml
 import utils.typeclass as tc
 import utils.helper as helper
+from collections import defaultdict
 
 # Function to generate graph.
 xml_ = etree.Element( 'yacml' )
 
 globals_ = {}
+
+reac_params_ = [ 'kf', 'kb', 'numkf', 'numkb', 'km' ]
 
 def attach_val_with_reduction( elem, val ):
     elem.text, elem.attrib['is_reduced'] = helper.reduce_expr( val )
@@ -66,7 +69,7 @@ def add_reaction_declaration( tokens, **kwargs ):
     reacId = etree.Element( 'reaction_declaration' )
     reacId.attrib['id'] = tokens[1]
     for key, val in tokens[2]:
-        if key.lower() in [ 'kf', 'kb', 'numkf', 'numkb', 'km' ]:
+        if key.lower() in reac_params_:
             elem = etree.SubElement( reacId, 'parameter' )
             elem.attrib['name'] = key
             attach_val_with_reduction( elem, val )
@@ -79,22 +82,33 @@ def add_reaction_declaration( tokens, **kwargs ):
 def add_reaction_instantiation( tokens, **kwargs ):
     reac = etree.Element( 'reaction' )
     subsList, r, prdList = tokens
+    nameOfReac = ''
     for sub in subsList:
         subXml = etree.SubElement( reac, 'substrate' )
         subXml.attrib['stoichiometric_number'] = sub[0]
         subXml.text = sub[1]
+        nameOfReac += sub[1]
+    nameOfReac += '__TO__'
     for prd in prdList:
         prdXml = etree.SubElement( reac, 'product' )
         prdXml.attrib['stoichiometric_number'] = prd[0]
         prdXml.text = prd[1]
+        nameOfReac += prd[1]
     
     # A simple identifier means reaction is declared elsewhere, a list means
     # that key, value pairs are declared.
     if type( r ) != str:
         for k, v in r:
-            reac.attrib[k] = v
+            if k.lower( ) in reac_params_:
+                elem = etree.SubElement( reac, 'parameter' )
+            else:
+                elem = etree.SubElement( reac, 'variable' )
+            elem.attrib[ 'name' ] = k
+            attach_val_with_reduction( elem, v )
     else:
         reac.attrib['instance_of'] = r
+
+    reac.attrib['name'] = nameOfReac
     return reac
 
 def add_recipe_instance( tokens, **kwargs ):

@@ -30,6 +30,17 @@ import lxml.etree as etree
 from collections import deque
 logger_ = config.logger_
 
+moose_dict_ = { 
+        'kb' : 'Kb' , 'kf' : 'Kf' 
+        }
+
+def find_reaction_instance( root_xml, rname ):
+    reacInsts =  root_xml.xpath( 'reaction_declaration[@id="%s"]' % rname )
+    if not reacInsts:
+        logger_.warn( 'I could not find a reaction declaration %s ' % rname )
+
+    assert len( reacInsts ) == 1, 'More than one definition of %s' % rname 
+    return reacInsts[0]
 
 
 def helper_constant_propagation( text, reduced, unreduced ):
@@ -180,6 +191,16 @@ def rewrite_function_expression( expr ):
         replacePairs.append( (found, replaceWith ) )
     return replacePairs, expr
 
+def attach_parateter_to_reac( param, reac ):
+    logger_.debug( 'Attaching paramter %s to reac %s' % ( param, reac ) )
+    fieldName = param.attrib[ 'name' ]
+    fieldName = moose_dict_.get( fieldName, fieldName )
+    if param.attrib[ 'is_reduced' ] == 'true':
+        reac.setField( fieldName, float( param.text ) )
+    else:
+        print( '[TODO] Need function to set param %s' % fieldName )
+
+
 
 ##
 # @brief Set concentration of a given Pool. If simple reduction to double is not
@@ -231,9 +252,30 @@ def load_species( species_xml, root_path ):
             set_pool_conc( pool, p, root_path )
     return p
 
-def load_reaction( reac_xml, root_xml ):
-    print( reac_xml )
-    logger_.info( 'Loading reaction %s' % reac_xml )
+def load_reaction( reac_xml, compt ):
+    logger_.info( 'Loading reaction %s' % reac_xml.attrib['name'] )
+    instOf  = reac_xml.attrib.get( 'instance_of', None )
+    reacPath = '%s/%s' % ( compt.path, reac_xml.attrib['name'] )
+    r = moose.Reac( reacPath )
+    for sub in reac_xml.xpath( '/substrate' ):
+        subPool = moose.element( '%s/%s' % (compt.path, sub ) ) 
+        for i in range( int( sub.attrib['stoichiometric_number']) ):
+            moose.connect( r, 'sub', subPool, 'reac' )
+    for prd in reac_xml.xpath( '/product' ):
+        prdPool = moose.element( '%s/%s' % (compt.path, prd ) ) 
+        for i in range( int( prd.attrib['stoichiometric_number']) ):
+            moose.connect( r, 'prd', prdPool, 'reac' )
+    if instOf:
+        rInst = find_reaction_instance( reac_xml.getparent(), instOf )
+        params = rInst.xpath( 'parameter' )
+        print params
+    else:
+        params = reac_xml.xpath( 'parameter' )
+        print params
+
+    assert params
+    [ attach_parateter_to_reac( p, r ) for p in params ]
+
 
 
 def load_chemical_reactions_in_compartment( subnetwork, compt ):
@@ -241,8 +283,7 @@ def load_chemical_reactions_in_compartment( subnetwork, compt ):
     netPath = '%s/%s' % ( compt.path, subnetwork.attrib['name'] )
     moose.Neutral( netPath )
     [ load_species( c, netPath ) for c in subnetwork.xpath('species' ) ]
-    print subnetwork.xpath( '/reaction' )
-    [ load_reaction( r, subnetwork ) for r in subnetwork.xpath('reaction') ]
+    [ load_reaction( r, compt ) for r in subnetwork.xpath('reaction') ]
 
 def load_xml( xml ):
     # First get all the compartments and create them.
