@@ -34,6 +34,9 @@ moose_dict_ = {
         'kb' : 'Kb' , 'kf' : 'Kf' 
         }
 
+# Store all moose.Table in dictionary: path : object
+tables_ = { }
+
 def find_reaction_instance( root_xml, rname ):
     reacInsts =  root_xml.xpath( 'reaction_declaration[@id="%s"]' % rname )
     if not reacInsts:
@@ -214,6 +217,23 @@ def attach_parateter_to_reac( param, reac, chem_net_path ):
                 )
         moose.connect( f, 'valueOut', reac, reacF )
 
+def attach_table_to_species( moose_pool, field_name ):
+    """Create a moose.Table to read the field_name 
+    """
+    global tables_
+    tabPath = '%s/table_%s' % (moose_pool.path, field_name ) 
+    logger_.info( 'Creating a moose.Table2 %s' % tabPath )
+    tab = moose.Table2( tabPath )
+    getField = 'get' + field_name[0].upper() + field_name[1:]
+    try:
+        moose.connect( tab, 'requestOut', moose_pool, getField )
+        tables_[ tabPath ] = tab
+    except Exception as e:
+        logger_.warn( 'Failed to add a Table on %s.%s' % ( moose_pool.path,
+            field_name )
+            )
+        logger_.warn( '\tError was %s' % e )
+
 ##
 # @brief Set concentration of a given Pool. If simple reduction to double is not
 # possible, use moose.Function to set things up.
@@ -250,7 +270,10 @@ def set_pool_conc( pool, pool_xml, compt_path ):
         logger_.error( "\t The error was %s" % e )
 
 def load_species( species_xml, root_path ):
-    # root_path is the path of recipe instantiation.
+    """Load a species XML into MOOSE under root_path 
+
+         root_path is the path of recipe instantiation.
+    """
     speciesPath = '%s/%s' % ( root_path, species_xml.attrib['name'] )
     logger_.info( 'Creating Pool/BufPool, path=%s' % speciesPath )
     if species_xml.attrib.get('is_buffered', 'false' ) == 'true':
@@ -263,6 +286,10 @@ def load_species( species_xml, root_path ):
     for p in params:
         if p.attrib['name'].lower() in [ 'n', 'conc' ]:
             set_pool_conc( pool, p, root_path )
+
+    recordElem = species_xml.xpath( 'variable[@name="record"]' )
+    if recordElem:
+        attach_table_to_species( pool, recordElem[0].text )
     return p
 
 def load_reaction( reac_xml, chem_net_path ):
@@ -305,6 +332,14 @@ def setup_solver( compt_xml, compt ):
     st.compartment = compt
     st.path = '%s/##' % compt.path
 
+def setup_recorder( modelname ):
+    """Setup a moose.Streamer to store all tables into one file.
+    """
+    global tables_
+    streamer = moose.Streamer( '/yacml/streamer' )
+    streamer.outfile = '%s.csv' %  modelname
+    streamer.addTables( tables_.values( ) )
+
 def load_chemical_reactions_in_compartment( subnetwork, compt ):
     logger_.info( 'Loading chemical reaction network in compartment %s' % compt )
     netPath = '%s/%s' % ( compt.path, subnetwork.attrib['name'] )
@@ -313,7 +348,11 @@ def load_chemical_reactions_in_compartment( subnetwork, compt ):
     [ load_reaction( r, netPath ) for r in subnetwork.xpath('reaction') ]
 
 def load_xml( xml ):
+    """Load a given YACML AST in XML format into MOOSE.
+    Return moose.Tables with data.
+    """
     # First get all the compartments and create them.
+    global tables_
     modelname = xml.find('model').attrib['name']
     moose.Neutral( '/yacml' )
     model = moose.Neutral( '/yacml/%s' % modelname )
@@ -323,6 +362,9 @@ def load_xml( xml ):
         for x in c.xpath( 'chemical_reaction_subnetwork' ):
             load_chemical_reactions_in_compartment( x, compt )
         setup_solver( c, compt )
+    setup_recorder( modelname  )
+    moose.reinit( )
+    return tables_
 
 ##
 # @brief Load yacml XML model into MOOSE.
