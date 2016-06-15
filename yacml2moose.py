@@ -191,16 +191,31 @@ def rewrite_function_expression( expr ):
         replacePairs.append( (found, replaceWith ) )
     return replacePairs, expr
 
-def attach_parateter_to_reac( param, reac ):
+def attach_parateter_to_reac( param, reac, chem_net_path ):
     logger_.debug( 'Attaching paramter %s to reac %s' % ( param, reac ) )
     fieldName = param.attrib[ 'name' ]
     fieldName = moose_dict_.get( fieldName, fieldName )
     if param.attrib[ 'is_reduced' ] == 'true':
         reac.setField( fieldName, float( param.text ) )
+        logger_.debug( 
+                'Setting reac %s.%s=%s' % (reac.path, fieldName, param.text)
+                )
     else:
-        print( '[TODO] Need function to set param %s' % fieldName )
-
-
+        f = moose.Function( '%s/set_%s' % ( reac.path, fieldName ) )
+        connections, expr = rewrite_function_expression( param.text )
+        f.x.num = len( connections )
+        for i, (x, y) in enumerate( connections ):
+            mooseElem = moose.element( '%s/%s' % ( chem_net_path, x ) )
+            if fieldName.lower() in [ 'numkf', 'numkb' ]:
+                moose.connect( mooseElem, 'nOut', f.x[i], 'input' )
+            else:
+                moose.connect( mooseElem, 'concOut', f.x[i], 'input' )
+        f.expr = expr
+        reacF = 'set' + fieldName[0].upper() + fieldName[1:]
+        logger_.debug(
+                'Setting reac %s.%s = %s' % ( reac.path, reacF, f.expr )
+                )
+        moose.connect( f, 'valueOut', reac, reacF )
 
 ##
 # @brief Set concentration of a given Pool. If simple reduction to double is not
@@ -238,8 +253,9 @@ def set_pool_conc( pool, pool_xml, compt_path ):
         logger_.error( "\t The error was %s" % e )
 
 def load_species( species_xml, root_path ):
+    # root_path is the path of recipe instantiation.
     speciesPath = '%s/%s' % ( root_path, species_xml.attrib['name'] )
-    logger_.debug( 'Creating Pool/BufPool, path=%s' % speciesPath )
+    logger_.info( 'Creating Pool/BufPool, path=%s' % speciesPath )
     if species_xml.attrib.get('is_buffered', 'false' ) == 'true':
         pool = moose.BufPool( speciesPath )
     else:
@@ -252,29 +268,27 @@ def load_species( species_xml, root_path ):
             set_pool_conc( pool, p, root_path )
     return p
 
-def load_reaction( reac_xml, compt ):
+def load_reaction( reac_xml, chem_net_path ):
     logger_.info( 'Loading reaction %s' % reac_xml.attrib['name'] )
     instOf  = reac_xml.attrib.get( 'instance_of', None )
-    reacPath = '%s/%s' % ( compt.path, reac_xml.attrib['name'] )
+    reacPath = '%s/%s' % ( chem_net_path, reac_xml.attrib['name'] )
     r = moose.Reac( reacPath )
     for sub in reac_xml.xpath( '/substrate' ):
-        subPool = moose.element( '%s/%s' % (compt.path, sub ) ) 
+        subPool = moose.element( '%s/%s' % (chem_net_path, sub ) ) 
         for i in range( int( sub.attrib['stoichiometric_number']) ):
             moose.connect( r, 'sub', subPool, 'reac' )
     for prd in reac_xml.xpath( '/product' ):
-        prdPool = moose.element( '%s/%s' % (compt.path, prd ) ) 
+        prdPool = moose.element( '%s/%s' % (chem_net_path, prd ) ) 
         for i in range( int( prd.attrib['stoichiometric_number']) ):
             moose.connect( r, 'prd', prdPool, 'reac' )
     if instOf:
         rInst = find_reaction_instance( reac_xml.getparent(), instOf )
         params = rInst.xpath( 'parameter' )
-        print params
     else:
         params = reac_xml.xpath( 'parameter' )
-        print params
 
-    assert params
-    [ attach_parateter_to_reac( p, r ) for p in params ]
+    assert len(params) > 1, "Need at least kf/kb, numKf/numKb"
+    [ attach_parateter_to_reac( p, r, chem_net_path ) for p in params ]
 
 
 
@@ -283,7 +297,7 @@ def load_chemical_reactions_in_compartment( subnetwork, compt ):
     netPath = '%s/%s' % ( compt.path, subnetwork.attrib['name'] )
     moose.Neutral( netPath )
     [ load_species( c, netPath ) for c in subnetwork.xpath('species' ) ]
-    [ load_reaction( r, compt ) for r in subnetwork.xpath('reaction') ]
+    [ load_reaction( r, netPath ) for r in subnetwork.xpath('reaction') ]
 
 def load_xml( xml ):
     # First get all the compartments and create them.
