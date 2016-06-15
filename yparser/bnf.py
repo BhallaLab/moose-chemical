@@ -19,6 +19,7 @@ import lxml
 import utils.typeclass as tc
 import utils.helper as helper
 from collections import defaultdict
+from config import logger_
 
 # Function to generate graph.
 xml_ = etree.Element( 'yacml' )
@@ -120,7 +121,7 @@ def add_recipe_instance( tokens, **kwargs ):
 
 def add_model( tokens, **kwargs ):
     global xml_
-    print( '[INFO] Adding top-level model ' )
+    logger_.info( 'Adding model ' )
     modelXml = etree.Element( 'model' )
     modelXml.attrib[ 'name' ] = tokens[1]
     for t in tokens[2:]:
@@ -130,11 +131,12 @@ def add_model( tokens, **kwargs ):
 
 def add_compt_instance( tokens, **kwargs ):
     instXml = etree.Element( 'compartment_instance' )
-    instXml.text = tokens[1]
-    instXml.attrib['instance_of'] = tokens[0]
+    instXml.attrib['type'] = tokens[0]
+    instXml.attrib['instance_of'] = tokens[1]
+    instXml.text = tokens[2]
     
     # attach all other tokesn.
-    for x in tokens[2:]:
+    for x in tokens[3:]:
         if isinstance( x, lxml._Element ):
             instXml.append( x )
         else:
@@ -203,10 +205,13 @@ CONST = Keyword( "const" )
 BUFFERED = Keyword( "buffered" ).setParseAction( lambda x: 'true' )
 END = Keyword("end").suppress()
 SIMULATOR = Keyword( "simulator" )
+STOCHASTIC = Keyword( "stochastic" )
+DETEMINISTIC = Keyword( "deterministic" ) | Keyword( "well-mixed" )
 
 anyKeyword = COMPT_BEGIN | RECIPE_BEGIN | MODEL_BEGIN \
         | HAS | IS | SPECIES | REACTION \
         | GEOMETRY | VAR | CONST | BUFFERED | END \
+        | DETEMINISTIC | DETEMINISTIC \
         | SIMULATOR
 
 # literals.
@@ -310,7 +315,8 @@ pSimulator.setParseAction( add_simulator )
 
 pComptType = pIdentifier 
 pComptInstName = pIdentifier 
-pComptInst = pComptType + pComptInstName + pEOS
+pComptNature = DETEMINISTIC | STOCHASTIC
+pComptInst = pComptNature + pComptType + pComptInstName + pEOS
 pComptInst.setParseAction( add_compt_instance )
 
 pModelName = pIdentifier

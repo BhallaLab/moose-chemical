@@ -107,9 +107,6 @@ def replace_variable_value( elem, local_vars, global_vars ):
 
 def do_constant_propagation_on_elem( elem ):
     validElems = [ 'variable', 'reaction', 'species' ]
-    # if elem.tag not in validElems:
-        # return
-
     if elem.attrib.get('is_reduced', 'false') == 'true':
         return
 
@@ -290,7 +287,19 @@ def load_reaction( reac_xml, chem_net_path ):
     assert len(params) > 1, "Need at least kf/kb, numKf/numKb"
     [ attach_parateter_to_reac( p, r, chem_net_path ) for p in params ]
 
+def setup_solver( compt_xml, compt ):
+    """Setup solver in each compartment.
 
+    """
+    logger_.info( "Setting up solver in compartment %s" % compt.path )
+    st = moose.Stoich( '%s/stoich' % compt.path )
+    if compt_xml.attrib['type'] == "stochastic":
+        s = moose.Gsolve( '%s/gsolve' % st.path )
+    else:
+        s = moose.Ksolve( '%s/ksolve' % st.path )
+    st.ksolve = s
+    st.compartment = compt
+    st.path = '%s/##' % compt.path
 
 def load_chemical_reactions_in_compartment( subnetwork, compt ):
     logger_.info( 'Loading chemical reaction network in compartment %s' % compt )
@@ -309,6 +318,7 @@ def load_xml( xml ):
         compts[c.attrib['name'] ] = compt = load_compartent( c, model )
         for x in c.xpath( 'chemical_reaction_subnetwork' ):
             load_chemical_reactions_in_compartment( x, compt )
+        setup_solver( c, compt )
 
 ##
 # @brief Load yacml XML model into MOOSE.

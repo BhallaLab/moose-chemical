@@ -27,9 +27,13 @@ logger_ = config.logger_
 def loadModel( filename ):
     """Main entry function
     """
+
     xml = yp.parse( filename )
+    with open( '%s0.xml' % filename , 'w' ) as f:
+        f.write( etree.tostring( xml, pretty_print = True ) )
+
     xml = astp.flatten( xml )
-    with open( '%s.xml' % filename, 'w' ) as f:
+    with open( '%s1.xml' % filename, 'w' ) as f:
         f.write( etree.tostring( xml, pretty_print = True ) ) 
 
     yacml2moose.load( xml )

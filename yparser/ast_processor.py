@@ -153,8 +153,11 @@ def flatten_model( model_xml, ast ):
         instName = compt.text
         instOf = compt.attrib['instance_of']
         comptInst = find_compartment( flattenedAST_, instOf )
+        comptInst.attrib.update( compt.attrib )
+        # Add/update old attributes which may not be relevant to declaration 
         comptInst.attrib['name'] = instName
         comptInst.attrib['instance_of'] = comptInst.attrib['id']
+        # Note: Don't delete 'id' attrib from dictionary
         modelXML.append( deepcopy( comptInst ) )
     return yacmlXML
 
