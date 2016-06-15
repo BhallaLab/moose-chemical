@@ -270,13 +270,17 @@ def load_reaction( reac_xml, chem_net_path ):
     instOf  = reac_xml.attrib.get( 'instance_of', None )
     reacPath = '%s/%s' % ( chem_net_path, reac_xml.attrib['name'] )
     r = moose.Reac( reacPath )
-    for sub in reac_xml.xpath( '/substrate' ):
-        subPool = moose.element( '%s/%s' % (chem_net_path, sub ) ) 
+    for sub in reac_xml.xpath( 'substrate' ):
+        subName = sub.text
+        subPool = moose.element( '%s/%s' % (chem_net_path, subName ) ) 
         for i in range( int( sub.attrib['stoichiometric_number']) ):
+            logger_.debug( 'Adding subtrate to reac %s' % subPool.path )
             moose.connect( r, 'sub', subPool, 'reac' )
-    for prd in reac_xml.xpath( '/product' ):
-        prdPool = moose.element( '%s/%s' % (chem_net_path, prd ) ) 
+    for prd in reac_xml.xpath( 'product' ):
+        prdName = prd.text
+        prdPool = moose.element( '%s/%s' % (chem_net_path, prdName ) ) 
         for i in range( int( prd.attrib['stoichiometric_number']) ):
+            logger_.debug( 'Adding product to reac %s' % prdPool.path )
             moose.connect( r, 'prd', prdPool, 'reac' )
     if instOf:
         rInst = find_reaction_instance( reac_xml.getparent(), instOf )
