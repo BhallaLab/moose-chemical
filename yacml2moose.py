@@ -37,6 +37,20 @@ moose_dict_ = {
 # Store all moose.Table in dictionary: path : object
 tables_ = { }
 
+def get_value_from_parameter_xml( param_elem, param_name ):
+    elem = param_elem.xpath( 'parameter[@name="%s"]' % param_name )
+    if not elem:
+        return None
+    else:
+        return float( elem[0].text )
+
+def get_value_from_variable_xml( param_elem, param_name ):
+    elem = param_elem.xpath( 'variable[@name="%s"]' % param_name )
+    if not elem:
+        return None
+    else:
+        return float( elem[0].text )
+
 def find_reaction_instance( root_xml, rname ):
     reacInsts =  root_xml.xpath( 'reaction_declaration[@id="%s"]' % rname )
     if not reacInsts:
@@ -146,19 +160,20 @@ def init_compartment( compt_name, geometry_xml, model ):
     geomType = geometry_xml.attrib['shape']
     compt = None
     comptPath = '%s/%s' % ( model.path, compt_name )
+    
     if geomType == 'cube':
         compt = moose.CubeMesh( comptPath )
-        compt.volume = float(
-                geometry_xml.xpath('variable[@name="volume"]')[0].text 
-                )
+        compt.volume = get_value_from_variable_xml( geometry_xml, 'volume' )
     elif geomType == 'cylinder':
         compt = moose.CylMesh( comptPath )
-        logger_.warn( 'Not fully supported yet. Need to attach geometry')
+        compt.volume = get_value_from_variable_xml( geometry_xml, 'volume' )
+        compt.x0, compt.y0, compt.z0 = 0, 0, 0
+        compt.x1 = get_value_from_variable_xml( geometry_xml, 'length' )
+        compt.y1, compt.z1 = compt.y0, compt.z0
+        compt.r0 = compt.r1 = get_value_from_variable_xml( geometry_xml, 'radius' )
     else:
         compt = moose.CubeMesh( comptPath )
-        compt.volume = float( 
-                geometry_xml.xpath('variable[@name="volume"]')[0].text 
-                )
+        compt.volume = float( volumeElem[0].text )
         logger_.warn( 'Unsupported compartment type %s. Using cube' % geomType )
     return compt
 
@@ -329,8 +344,25 @@ def setup_solver( compt_xml, compt ):
     else:
         s = moose.Ksolve( '%s/ksolve' % st.path )
     st.ksolve = s
+
+    # Enable diffusion in compartment.
+    diffusion = compt_xml.xpath( 'variable[@name="diffusion_length"]' )
+    if diffusion:
+        logger_.info( 'Enabling diffusion in compartment' )
+        dsolve = moose.Dsolve( '%s/dsolve' % st.path )
+        st.dsolve = dsolve
+        try:
+            compt.diffLength = float( diffusion[0].text )
+            logger_.info( '\tdiffLength is set to %s' % compt.diffLength )
+        except Exception as e:
+            logger_.warn( 
+                    'Compartment %s does not support paramter diffLength' %
+                    compt )
+
     st.compartment = compt
     st.path = '%s/##' % compt.path
+
+
 
 def setup_recorder( modelname ):
     """Setup a moose.Streamer to store all tables into one file.
