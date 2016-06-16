@@ -201,7 +201,7 @@ IS = Keyword( "is" ).suppress()
 SPECIES = Keyword( "species" ) | Keyword( "pool" ) | Keyword( "enzyme" )
 REACTION = Keyword( "reaction" ) | Keyword( "reac" ) | Keyword( "enz_reac" )
 GEOMETRY = Keyword("cylinder") | Keyword( "cube" ) | Keyword( "spine" )
-VAR = Keyword( "var" ) 
+VAR = Keyword( "variable" ) 
 CONST = Keyword( "const" ) 
 BUFFERED = Keyword( "buffered" ).setParseAction( lambda x: 'true' )
 END = Keyword("end").suppress()
@@ -277,7 +277,7 @@ pReacInst.setParseAction( add_reaction_instantiation )
 pReacExpr = pReacDecl | pReacInst
 
 pTypeExpr = CONST | VAR
-pVariableExpr = ( Optional(pTypeExpr, 'var') + pKeyVals) + pEOS
+pVariableExpr = ( Optional(pTypeExpr, 'variable') + pKeyVals) + pEOS
 pVariableExpr.setParseAction( add_variable )
 
 # Name of the recipe

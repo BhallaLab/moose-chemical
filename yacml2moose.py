@@ -398,8 +398,8 @@ def setup_recorder( modelname ):
     """
     global tables_
     streamer = moose.Streamer( '/yacml/streamer' )
-    streamer.outfile = '%s.csv' %  modelname
     streamer.addTables( tables_.values( ) )
+    return streamer
 
 def load_chemical_reactions_in_compartment( subnetwork, compt ):
     logger_.info( 'Loading chemical reaction network in compartment %s' % compt )
@@ -408,9 +408,15 @@ def load_chemical_reactions_in_compartment( subnetwork, compt ):
     [ load_species( c, netPath ) for c in subnetwork.xpath('species' ) ]
     [ load_reaction( r, netPath ) for r in subnetwork.xpath('reaction') ]
 
-def setup_run( sim_xml ):
+def setup_run( sim_xml, streamer = None ):
     simTime = eval( sim_xml.attrib['sim_time'] )
     print( 'Running MOOSE for %s seconds' % simTime )
+    if sim_xml.attrib.get('format') is not None:
+        format_ = sim_xml[ 'format' ]
+    else:
+        format_ = 'csv'
+    streamer.outfile = '%s.%s' %  ( modelname % format_ )
+    loagger_.info( 'Saving streamer file to %s' % streamer.outfile )
     moose.reinit( )
     moose.start( simTime, 1 )
 
@@ -429,11 +435,11 @@ def load_xml( xml ):
         for x in c.xpath( 'chemical_reaction_subnetwork' ):
             load_chemical_reactions_in_compartment( x, compt )
         setup_solver( c, compt )
-    setup_recorder( modelname  )
+    st = setup_recorder( modelname  )
 
     simulator = xml.xpath( '/yacml/model/simulator' )
     if simulator:
-        setup_run( simulator[0] )
+        setup_run( simulator[0], st )
     return tables_
 
 ##
