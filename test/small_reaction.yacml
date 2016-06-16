@@ -1,0 +1,21 @@
+recipe simple  is
+    
+    species a [ conc = 1e-4, record = N ];
+    species b [ conc = 1e-3, record = N ];
+
+    reaction r_a_to_b [ kf = 10, kb = 10 ];
+    3a <- r_a_to_b -> 2b ;
+
+end 
+
+compartment small is 
+    cube [ volume = 1e-17 ]
+has 
+    simple recipeA;
+end 
+
+pathway my_small_model has
+    //well-mixed small s1;
+    stochastic small s1;
+    simulator moose [ sim_time = 3000 ];
+end 
