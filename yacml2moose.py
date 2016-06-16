@@ -144,8 +144,6 @@ def do_constant_propagation_on_elem( elem ):
         # also refer to another global variable.
         logger_.debug( 'Global variable  %s = %s' % ( elem.attrib['name'], globalVars ))
         logger_.debug( 'Local variable %s = %s' % ( elem.attrib['name'], localVars )) 
-        print localVars 
-        print globalVars
         elem = replace_variable_value( elem, localVars, globalVars )
 
 ##
@@ -410,7 +408,7 @@ def load_chemical_reactions_in_compartment( subnetwork, compt ):
 
 def setup_run( sim_xml, streamer = None ):
     simTime = eval( sim_xml.attrib['sim_time'] )
-    print( 'Running MOOSE for %s seconds' % simTime )
+    logger_.info( 'Running MOOSE for %s seconds' % simTime )
     if sim_xml.attrib.get('format') is not None:
         format_ = sim_xml[ 'format' ]
     else:
