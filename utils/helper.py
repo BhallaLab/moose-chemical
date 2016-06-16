@@ -17,6 +17,7 @@ import __future__
 import ast
 import re
 import math
+import moose
 
 # Bring imports from math to global namespace so that eval can use them.
 from math import *
@@ -81,3 +82,24 @@ def reduce_expr( expr ):
         logger_.debug( '\tError was %s' % e )
         val = expr 
     return str(val), isReduced
+
+def compt_info( compt ):
+    """Get the compartment info as string"""
+    info = ''
+    if isinstance( compt, moose.CubeMesh ):
+        info += 'Cube\n'
+        info += '\tx0, y0, z0 : %s, %s, %s\n' % (compt.x0, compt.y0, compt.z0)
+        info += '\tx1, y1, z1 : %s, %s, %s\n' % (compt.x1, compt.y1, compt.z1)
+        info += '\tvolume : %s' % compt.volume 
+    elif isinstance( compt, moose.CylMesh ):
+        info += 'Cylinder:\n'
+        info += '\tr0, r1 : %s, %s\n' % (compt.r0, compt.r1 )
+        info += '\tx0, y0, z0 : %s, %s, %s\n' % (compt.x0, compt.y0, compt.z0 )
+        info += '\tx1, y1, z1 : %s, %s, %s\n' % (compt.x1, compt.y1, compt.z1 )
+        try:
+            info ++ '\tvolume = %s' % compt.volume 
+        except Exception as e:
+            pass
+    else:
+        info += "Unknown/unsupported compartment type %s" % compt
+    return info

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import moose
 import yacml
 import sys

@@ -26,7 +26,8 @@ log_levels_ = {
         }
 
 logging.basicConfig(level=logging.DEBUG,
-    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+    # format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+    format='%(levelname)-8s %(message)s',
     filename = '__moose_yacml__.log',
     datefmt='%m-%d %H:%M',
     filemode='w'

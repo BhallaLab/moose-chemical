@@ -159,6 +159,10 @@ def flatten_model( model_xml, ast ):
         comptInst.attrib['instance_of'] = comptInst.attrib['id']
         # Note: Don't delete 'id' attrib from dictionary
         modelXML.append( deepcopy( comptInst ) )
+
+    for sim in model_xml.xpath( 'simulator' ):
+        modelXML.append( deepcopy( sim ) )
+
     return yacmlXML
 
 
