@@ -16,19 +16,20 @@ __status__           = "Development"
 
 import __future__
 import moose
-import moose.print_utils as pu
 import re
 import ast
+import math 
+
+import config
+import notify as warn
+import lxml.etree as etree
+import moose.print_utils as pu
+
 from utils import test_expr as te
 from utils import expression as _expr
 from utils import helper
-import notify as warn
-import config
-from utils import typeclass as tc
-import lxml.etree as etree
-# from utils.helper import *
 from collections import deque
-import math 
+from utils import typeclass as tc
 
 logger_ = config.logger_
 
@@ -36,7 +37,6 @@ logger_.debug( 'Using moose from %s' % moose.__file__ )
 logger_.debug( '\tVersion %s' % moose.__version__ )
 
 # Some more global variables such as volume of compartment, length and radius.
-
 globals_ = { }
 
 moose_dict_ = { 
@@ -68,7 +68,6 @@ def find_reaction_instance( root_xml, rname ):
 
     assert len( reacInsts ) == 1, 'More than one definition of %s' % rname 
     return reacInsts[0]
-
 
 def helper_constant_propagation( text, reduced, unreduced ):
     # Get all identifiers which can be replaced.
@@ -265,6 +264,7 @@ def attach_table_to_species( moose_pool, field_name ):
     tabPath = '%s/table_%s' % (moose_pool.path, field_name ) 
     logger_.info( 'Creating a moose.Table2 %s' % tabPath )
     tab = moose.Table2( tabPath )
+    tab.name = '%s.%s' % ( moose_pool.name, field_name )
     getField = 'get' + field_name[0].upper() + field_name[1:]
     try:
         moose.connect( tab, 'requestOut', moose_pool, getField )
@@ -289,7 +289,7 @@ def set_pool_conc( pool, pool_xml, compt_path ):
     fieldName = pool_xml.attrib['name'].lower( )
     if isReduced == 'true':
         pool.setField( '%sInit' % fieldName, float(expr) )
-        logger_.info( 
+        logger_.debug( 
                 '\tSet field %s = %s' % (
                     fieldName, pool.getField( '%sInit' % fieldName ) )
                 )
