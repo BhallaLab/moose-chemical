@@ -35,6 +35,7 @@ logger_.debug( '\tVersion %s' % moose.__version__ )
 
 # Some more global variables such as volume of compartment, length and radius.
 globals_ = { }
+modelname_ = None
 
 moose_dict_ = { 
         'kb' : 'Kb' , 'kf' : 'Kf' 
@@ -391,7 +392,7 @@ def setup_solver( compt_xml, compt ):
     st.path = '%s/##' % compt.path
     logger_.debug( '\tSet solver path = %s' % st.path )
 
-def setup_recorder( modelname ):
+def setup_recorder( ):
     """Setup a moose.Streamer to store all tables into one file.
     """
     global tables_
@@ -407,14 +408,15 @@ def load_chemical_reactions_in_compartment( subnetwork, compt ):
     [ load_reaction( r, netPath ) for r in subnetwork.xpath('reaction') ]
 
 def setup_run( sim_xml, streamer = None ):
+    global modelname_
     simTime = eval( sim_xml.attrib['sim_time'] )
     logger_.info( 'Running MOOSE for %s seconds' % simTime )
     if sim_xml.attrib.get('format') is not None:
-        format_ = sim_xml[ 'format' ]
+        format_ = sim_xml.attrib[ 'format' ]
     else:
         format_ = 'csv'
-    streamer.outfile = '%s.%s' %  ( modelname % format_ )
-    loagger_.info( 'Saving streamer file to %s' % streamer.outfile )
+    streamer.outfile = '%s.%s' %  ( modelname_, format_ )
+    logger_.info( 'Saving streamer file to %s' % streamer.outfile )
     moose.reinit( )
     moose.start( simTime, 1 )
 
@@ -424,16 +426,17 @@ def load_xml( xml ):
     """
     # First get all the compartments and create them.
     global tables_
-    modelname = xml.find('model').attrib['name']
+    global modelname_
+    modelname_ = xml.find('model').attrib['name']
     moose.Neutral( '/yacml' )
-    model = moose.Neutral( '/yacml/%s' % modelname )
+    model = moose.Neutral( '/yacml/%s' % modelname_ )
     compts = {}
     for c in xml.xpath( '/yacml/model/compartment' ):
         compts[c.attrib['name'] ] = compt = load_compartent( c, model )
         for x in c.xpath( 'chemical_reaction_subnetwork' ):
             load_chemical_reactions_in_compartment( x, compt )
         setup_solver( c, compt )
-    st = setup_recorder( modelname  )
+    st = setup_recorder( )
 
     simulator = xml.xpath( '/yacml/model/simulator' )
     if simulator:
