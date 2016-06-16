@@ -21,15 +21,12 @@ import ast
 import math 
 
 import config
-import notify as warn
 import lxml.etree as etree
 import moose.print_utils as pu
 
 from utils import test_expr as te
-from utils import expression as _expr
 from utils import helper
 from collections import deque
-from utils import typeclass as tc
 
 logger_ = config.logger_
 

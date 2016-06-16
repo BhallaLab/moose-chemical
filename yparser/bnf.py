@@ -13,13 +13,14 @@ __maintainer__       = "Dilawar Singh"
 __email__            = "dilawars@ncbs.res.in"
 __status__           = "Development"
 
-from .pyparsing import *
-import lxml.etree as etree
 import lxml
-import utils.typeclass as tc
+
+import lxml.etree as etree
 import utils.helper as helper
+
 from collections import defaultdict
 from config import logger_
+from .pyparsing import *
 
 # Function to generate graph.
 xml_ = etree.Element( 'yacml' )
