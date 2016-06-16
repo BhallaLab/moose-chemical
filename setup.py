@@ -40,7 +40,7 @@ setup(
     version = "0.1.0",
     description = "Yet Another Chemical Markup Language (YACML) in MOOSE",
     long_description = readme,
-    packages = [ ".", "kinetics", "yparser", "utils", "py_expression_eval" ],
+    packages = [ ".", "yparser", "utils" ],
     package_data = {},
     install_requires = [ ],
     author = "Dilawar Singh",
