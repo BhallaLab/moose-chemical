@@ -37,6 +37,9 @@ logger_.debug( '\tVersion %s' % moose.__version__ )
 globals_ = { }
 modelname_ = None
 
+# Required to construct a unique name for moose.Tables
+current_chemical_subnetwork_name_ = None
+
 moose_dict_ = { 
         'kb' : 'Kb' , 'kf' : 'Kf' 
         }
@@ -257,11 +260,16 @@ def attach_table_to_species( moose_pool, field_name ):
     """Create a moose.Table to read the field_name 
     """
     global tables_
+    global current_chemical_subnetwork_name_
     tabPath = '%s/table_%s' % (moose_pool.path, field_name ) 
     logger_.info( 'Creating a moose.Table2 %s' % tabPath )
     tab = moose.Table2( tabPath )
-    tab.name = '%s.%s' % ( moose_pool.name, field_name )
+    tab.name = '%s.%s.%s' % ( current_chemical_subnetwork_name_
+            , moose_pool.name
+            , field_name 
+            )
     getField = 'get' + field_name[0].upper() + field_name[1:]
+
     try:
         moose.connect( tab, 'requestOut', moose_pool, getField )
         tables_[ tabPath ] = tab
@@ -315,8 +323,14 @@ def load_species( species_xml, root_path ):
 
          root_path is the path of recipe instantiation.
     """
+    global current_chemical_subnetwork_name_
     speciesPath = '%s/%s' % ( root_path, species_xml.attrib['name'] )
+
+    # This is neccessary to construct unique names for tables.
+    current_chemical_subnetwork_name_ = species_xml.attrib['name']
+
     logger_.info( 'Creating Pool/BufPool, path=%s' % speciesPath )
+
     if species_xml.attrib.get('is_buffered', 'false' ) == 'true':
         pool = moose.BufPool( speciesPath )
     else:
