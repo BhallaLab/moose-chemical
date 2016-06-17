@@ -327,7 +327,7 @@ def load_species( species_xml, root_path ):
     speciesPath = '%s/%s' % ( root_path, species_xml.attrib['name'] )
 
     # This is neccessary to construct unique names for tables.
-    current_chemical_subnetwork_name_ = species_xml.attrib['name']
+    current_chemical_subnetwork_name_ = root_path.split('/')[-1]
 
     logger_.info( 'Creating Pool/BufPool, path=%s' % speciesPath )
 
