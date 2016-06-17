@@ -431,6 +431,13 @@ def setup_run( sim_xml, streamer = None ):
         format_ = 'csv'
     streamer.outfile = '%s.%s' %  ( modelname_, format_ )
     logger_.info( 'Saving streamer file to %s' % streamer.outfile )
+
+    # If plot_dt is defined, use it. Only effective on moose.Table2.
+    # By default it is per 1 seconds.
+    if sim_xml.attrib.get( 'record_dt', False ):
+        moose.setClock( 18, eval( sim_xml.attrib['record_dt' ] ) )
+        logger_.debug( "Set dt of moose.Table2 = %s" % sim_xml.attrib['record_dt'] )
+
     moose.reinit( )
     moose.start( simTime, 1 )
 
