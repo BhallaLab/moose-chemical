@@ -200,7 +200,7 @@ HAS = Keyword("has").suppress()
 IS = Keyword( "is" ).suppress()
 SPECIES = Keyword( "species" ) | Keyword( "pool" ) | Keyword( "enzyme" )
 REACTION = Keyword( "reaction" ) | Keyword( "reac" ) | Keyword( "enz_reac" )
-GEOMETRY = Keyword("cylindar") | Keyword( "cube" ) | Keyword( "spine" )
+GEOMETRY = Keyword("cylinder") | Keyword( "cube" ) | Keyword( "spine" )
 VAR = Keyword( "variable" ) 
 CONST = Keyword( "const" ) 
 BUFFERED = Keyword( "buffered" ).setParseAction( lambda x: 'true' )
@@ -290,7 +290,7 @@ pRecipeInstExpr = pRecipeType + pRecipeName + pEOS
 pRecipeInstExpr.setParseAction( add_recipe_instance )
 
 # Geometry of compartment.
-pGeometry = GEOMETRY + pKeyValList
+pGeometry = GEOMETRY + Optional( pKeyValList, [] )
 pGeometry.setParseAction( add_geometry )
 
 # Valid YAXML expression
