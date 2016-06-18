@@ -176,11 +176,11 @@ def init_compartment( compt_name, geometry_xml, model ):
     compt = None
     comptPath = '%s/%s' % ( model.path, compt_name )
     volume = None
-    if geomType == 'cube':
+    if geomType == 'cubical':
         compt = moose.CubeMesh( comptPath )
         compt.volume = get_value_from_variable_xml( geometry_xml, 'volume' )
         volume = compt.volume
-    elif geomType == 'cylinder':
+    elif geomType == 'cylinderical':
         compt = moose.CylMesh( comptPath )
         compt.x0, compt.y0, compt.z0 = 0, 0, 0
         compt.x1 = get_value_from_variable_xml( geometry_xml, 'length' )
@@ -193,6 +193,7 @@ def init_compartment( compt_name, geometry_xml, model ):
         volume = compt.volume
         logger_.warn( 'Unsupported compartment type %s. Using cube' % geomType )
     logger_.debug( '\t Added compartment\n\t %s' % helper.compt_info( compt ) )
+    assert volume > 0, "Volume of compartment must be > 0.0 "
     globals_['volume'] = volume
     return compt
 

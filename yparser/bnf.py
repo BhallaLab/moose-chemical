@@ -151,6 +151,11 @@ def add_simulator( tokens, **kwargs ):
         simXml.attrib[k] = v
     return simXml
 
+def add_geometry( tokens, **kwargs ):
+    print tokens
+    elem = etree.Element( 'geometry' )
+    return elem
+
 ##
 # @brief Add a compartment to XML AST.
 #
@@ -188,14 +193,14 @@ def parser_main( tokens, **kwargs ):
 
 
 # YACML BNF.
-COMPT_BEGIN = Keyword("compartment")
+COMPARTMENT = Keyword("compartment")
 RECIPE_BEGIN = Keyword( "recipe" )
-MODEL_BEGIN = Keyword( "model" ) | Keyword( "pathway" )
+MODEL = Keyword( "model" ) | Keyword( "pathway" )
 HAS = Keyword("has").suppress()
 IS = Keyword( "is" ).suppress()
 SPECIES = Keyword( "species" ) | Keyword( "pool" ) | Keyword( "enzyme" )
 REACTION = Keyword( "reaction" ) | Keyword( "reac" ) | Keyword( "enz_reac" )
-GEOMETRY = Keyword("cylinderical") | Keyword( "cubical" ) | Keyword( "spiny" )
+GEOMETRY = Keyword("cylindar") | Keyword( "cube" ) | Keyword( "spine" )
 VAR = Keyword( "variable" ) 
 CONST = Keyword( "const" ) 
 BUFFERED = Keyword( "buffered" ).setParseAction( lambda x: 'true' )
@@ -205,7 +210,7 @@ STOCHASTIC = Keyword( "stochastic" )
 DETEMINISTIC = Keyword( "deterministic" ) | Keyword( "well-mixed" )
 DIFFUSIVE = Keyword( "diffusive" )
 
-anyKeyword = COMPT_BEGIN | RECIPE_BEGIN | MODEL_BEGIN \
+anyKeyword = COMPARTMENT | RECIPE_BEGIN | MODEL \
         | HAS | IS | SPECIES | REACTION \
         | GEOMETRY | VAR | CONST | BUFFERED | END \
         | DETEMINISTIC | DETEMINISTIC \
@@ -285,7 +290,8 @@ pRecipeInstExpr = pRecipeType + pRecipeName + pEOS
 pRecipeInstExpr.setParseAction( add_recipe_instance )
 
 # Geometry of compartment.
-pGeometry = GEOMETRY 
+pGeometry = GEOMETRY + pKeyValList
+pGeometry.setParseAction( add_geometry )
 
 # Valid YAXML expression
 pYACMLExpr = pSpeciesExpr | pReacExpr | pVariableExpr | pRecipeInstExpr
@@ -294,7 +300,7 @@ pYACMLExpr = pSpeciesExpr | pReacExpr | pVariableExpr | pRecipeInstExpr
 # @brief Compartment can have reactions, species, or instance of other recipe.
 # Compartment also have solver, geometry and diffusion.
 pCompartmentBody = OneOrMore( pYACMLExpr )
-pCompartment = pGeometry + COMPT_BEGIN + pComptName +  HAS + pCompartmentBody + END
+pCompartment = COMPARTMENT + pComptName + IS + pGeometry +  HAS + pCompartmentBody + END
 pCompartment.setParseAction( add_compartment )
 
 # Recipe 
@@ -314,14 +320,15 @@ pComptType = pIdentifier
 pComptInstName = pIdentifier 
 pComptNature = DIFFUSIVE 
 pComptInst = Optional( pComptNature, "nondiffusive") \
-        + pComptType + pComptInstName \
-        + Optional( pKeyValList ) + pEOS
+        + pComptInstName + IS + pComptType \
+        + Optional( pKeyValList, [] ) + pEOS
+
 pComptInst.setParseAction( add_compt_instance )
 
 pModelName = pIdentifier
 pModelStmt = ( pComptInst | pSimulator )
 
-pModel = MODEL_BEGIN + pModelName + HAS +  OneOrMore( pModelStmt ) + END
+pModel = MODEL + pModelName + HAS +  OneOrMore( pModelStmt ) + END
 pModel.setParseAction( add_model )
 
 # There must be one and only one model statement in each file. Each model must
