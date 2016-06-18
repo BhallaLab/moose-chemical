@@ -8,14 +8,13 @@ recipe simple  is
 
 end 
 
-compartment small is 
-    cube [ volume = 1e-17 ]
+cubical compartment small 
 has 
     simple recipeA;
 end 
 
 pathway my_small_model has
     //well-mixed small s1;
-    stochastic small s1;
-    simulator moose [ sim_time = 3000 ];
+    diffusive small s1 [ length = 10, diamter = 20 ];
+    simulator moose [ sim_time = 3000, stochastic = true ];
 end 

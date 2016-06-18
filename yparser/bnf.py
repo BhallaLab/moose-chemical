@@ -137,8 +137,8 @@ def add_compt_instance( tokens, **kwargs ):
     instXml.text = tokens[2]
     
     # attach all other tokesn.
-    for x in tokens[3:]:
-        if isinstance( x, lxml._Element ):
+    for x in tokens[3]:
+        if isinstance( x, etree._Element ):
             instXml.append( x )
         else:
             instXml.attrib[x[0]] = x[1]
@@ -162,18 +162,13 @@ def add_compartment( tokens, **kwargs ):
     global xml_
     print( '[INFO] Adding compartment %s' % tokens )
     compt = etree.Element( 'compartment' )
-    compt.attrib['id'] = tokens[1]
-
     comptGeom = etree.SubElement( compt, 'geometry' )
-    comptGeom.attrib['shape'] = tokens[2]
+    comptGeom.attrib['shape'] = tokens[0]
 
-    for k, v in tokens[3]:
-        elem = etree.SubElement( comptGeom, 'variable' )
-        elem.attrib['name'] = k
-        attach_val_with_reduction( elem, v )
+    compt.attrib['id'] = tokens[2]
 
     # And append rest of the xml/
-    for x in tokens[4:]:
+    for x in tokens[3:]:
         if isinstance( x, etree._Element ):
             compt.append( x )
     xml_.append( compt )
@@ -200,7 +195,7 @@ HAS = Keyword("has").suppress()
 IS = Keyword( "is" ).suppress()
 SPECIES = Keyword( "species" ) | Keyword( "pool" ) | Keyword( "enzyme" )
 REACTION = Keyword( "reaction" ) | Keyword( "reac" ) | Keyword( "enz_reac" )
-GEOMETRY = Keyword("cylinder") | Keyword( "cube" ) | Keyword( "spine" )
+GEOMETRY = Keyword("cylinderical") | Keyword( "cubical" ) | Keyword( "spiny" )
 VAR = Keyword( "variable" ) 
 CONST = Keyword( "const" ) 
 BUFFERED = Keyword( "buffered" ).setParseAction( lambda x: 'true' )
@@ -208,12 +203,13 @@ END = Keyword("end").suppress()
 SIMULATOR = Keyword( "simulator" )
 STOCHASTIC = Keyword( "stochastic" )
 DETEMINISTIC = Keyword( "deterministic" ) | Keyword( "well-mixed" )
+DIFFUSIVE = Keyword( "diffusive" )
 
 anyKeyword = COMPT_BEGIN | RECIPE_BEGIN | MODEL_BEGIN \
         | HAS | IS | SPECIES | REACTION \
         | GEOMETRY | VAR | CONST | BUFFERED | END \
         | DETEMINISTIC | DETEMINISTIC \
-        | SIMULATOR
+        | DIFFUSIVE | SIMULATOR 
 
 # literals.
 pEOS = Literal( ";" ).suppress()
@@ -289,7 +285,7 @@ pRecipeInstExpr = pRecipeType + pRecipeName + pEOS
 pRecipeInstExpr.setParseAction( add_recipe_instance )
 
 # Geometry of compartment.
-pGeometry = GEOMETRY + Optional( pKeyValList, [] )
+pGeometry = GEOMETRY 
 
 # Valid YAXML expression
 pYACMLExpr = pSpeciesExpr | pReacExpr | pVariableExpr | pRecipeInstExpr
@@ -298,12 +294,12 @@ pYACMLExpr = pSpeciesExpr | pReacExpr | pVariableExpr | pRecipeInstExpr
 # @brief Compartment can have reactions, species, or instance of other recipe.
 # Compartment also have solver, geometry and diffusion.
 pCompartmentBody = OneOrMore( pYACMLExpr )
-pCompartment = COMPT_BEGIN + pComptName + IS + pGeometry + HAS + pCompartmentBody + END
+pCompartment = pGeometry + COMPT_BEGIN + pComptName +  HAS + pCompartmentBody + END
 pCompartment.setParseAction( add_compartment )
 
 # Recipe 
 pRecipeBody = OneOrMore( pYACMLExpr )
-pRecipe =  RECIPE_BEGIN + pRecipeName + IS  + pRecipeBody + END 
+pRecipe =  RECIPE_BEGIN + pRecipeName + HAS  + pRecipeBody + END 
 pRecipe.setParseAction( add_recipe )
 
 # Model
@@ -316,8 +312,10 @@ pSimulator.setParseAction( add_simulator )
 
 pComptType = pIdentifier 
 pComptInstName = pIdentifier 
-pComptNature = DETEMINISTIC | STOCHASTIC
-pComptInst = pComptNature + pComptType + pComptInstName + pEOS
+pComptNature = DIFFUSIVE 
+pComptInst = Optional( pComptNature, "nondiffusive") \
+        + pComptType + pComptInstName \
+        + Optional( pKeyValList ) + pEOS
 pComptInst.setParseAction( add_compt_instance )
 
 pModelName = pIdentifier
