@@ -151,23 +151,22 @@ def do_constant_propagation( tree ):
 def init_compartment( compt_name, geometry_xml, model ):
     global globals_
     geomType = geometry_xml.attrib['shape']
-    compt = None
+    compt, volume = None, 0.0
     comptPath = '%s/%s' % ( model.path, compt_name )
-    volume = None
     if geomType == 'cube':
         compt = moose.CubeMesh( comptPath )
-        compt.volume = xml.get_value_from_variable_xml( geometry_xml, 'volume' )
+        compt.volume = xml.get_value_from_parameter_xml( geometry_xml, 'volume' )
         volume = compt.volume
     elif geomType == 'cylinder':
         compt = moose.CylMesh( comptPath )
         compt.x0, compt.y0, compt.z0 = 0, 0, 0
-        compt.x1 = xml.get_value_from_variable_xml( geometry_xml, 'length' )
+        compt.x1 = xml.get_value_from_parameter_xml( geometry_xml, 'length' )
         compt.y1, compt.z1 = compt.y0, compt.z0
-        compt.r0 = compt.r1 = xml.get_value_from_variable_xml( geometry_xml, 'radius' )
-        volume = xml.get_value_from_variable_xml( geometry_xml, 'volume' )
+        compt.r0 = compt.r1 = xml.get_value_from_parameter_xml( geometry_xml, 'radius' )
+        volume = xml.get_value_from_parameter_xml( geometry_xml, 'volume' )
     else:
         compt = moose.CubeMesh( comptPath )
-        compt.volume = xml.get_value_from_variable_xml( geometry_xml, 'volume' )
+        compt.volume = xml.get_value_from_parameter_xml( geometry_xml, 'volume' )
         volume = compt.volume
         logger_.warn( 'Unsupported compartment type %s. Using cube' % geomType )
     logger_.debug( '\t Added compartment\n\t %s' % helper.compt_info( compt ) )
@@ -345,7 +344,7 @@ def load_reaction( reac_xml, chem_net_path ):
             logger_.debug( '\tAdding product  %s' % prdPool.path )
             moose.connect( r, 'prd', prdPool, 'reac' )
     if instOf:
-        rInst = find_reaction_instance( reac_xml.getparent(), instOf )
+        rInst = xml.find_reaction_instance( reac_xml.getparent(), instOf )
         params = rInst.xpath( 'parameter' )
     else:
         params = reac_xml.xpath( 'parameter' )

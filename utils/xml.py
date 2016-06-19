@@ -14,22 +14,19 @@ __maintainer__       = "Dilawar Singh"
 __email__            = "dilawars@ncbs.res.in"
 __status__           = "Development"
 
+import lxml.etree as etree
+
 from config import logger_
 
 def get_value_from_parameter_xml( param_elem, param_name ):
     elem = param_elem.xpath( 'parameter[@name="%s"]' % param_name )
-    if not elem:
-        return None
-    else:
-        return float( elem[0].text )
+    assert elem, "Could not find paramter %s" % param_name 
+    return float( elem[0].text )
 
 def get_value_from_variable_xml( root_xml, param_name ):
     elem = root_xml.xpath( 'variable[@name="%s"]' % param_name )
-    if len(elem) == 0:
-        logger_.warn( 'Could not find paramter %s. Using 0' % param_name )
-        return 0.0
-    else:
-        return float( elem[0].text )
+    assert elem, "Could not find variable named %s" % param_name 
+    return float( elem[0].text )
 
 def find_reaction_instance( root_xml, rname ):
     reacInsts =  root_xml.xpath( 'reaction_declaration[@id="%s"]' % rname )
