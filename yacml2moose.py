@@ -164,6 +164,7 @@ def init_compartment( compt_name, geometry_xml, model ):
         compt.y1, compt.z1 = compt.y0, compt.z0
         compt.r0 = compt.r1 = xml.get_value_from_parameter_xml( geometry_xml, 'radius' )
         volume = xml.get_value_from_parameter_xml( geometry_xml, 'volume' )
+        compt.volume = volume
     else:
         compt = moose.CubeMesh( comptPath )
         compt.volume = xml.get_value_from_parameter_xml( geometry_xml, 'volume' )

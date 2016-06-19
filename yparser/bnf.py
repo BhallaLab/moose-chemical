@@ -133,7 +133,7 @@ def add_model( tokens, **kwargs ):
             modelXml.append( t )
     xml_.append( modelXml )
 
-def add_compt_instance( tokens, **kwargs ):
+def add_compartment_instance( tokens, **kwargs ):
     instXml = etree.Element( 'compartment_instance' )
     instXml.attrib['type'] = tokens[0]
     instXml.text = tokens[1]
@@ -174,8 +174,9 @@ def compute_volume( geom_xml ):
 
 def add_geometry( tokens, **kwargs ):
     geom = etree.Element( 'geometry' )
-    geom.attrib['shape'] = tokens[0]
-    for k, v in tokens[1]:
+    geom.attrib['diffusion'] = tokens[0]
+    geom.attrib['shape'] = tokens[1]
+    for k, v in tokens[2]:
         elem = etree.SubElement( geom, 'parameter' ) 
         elem.attrib['name'] = k
         attach_val_with_reduction( elem, v )
@@ -316,7 +317,9 @@ pRecipeInstExpr = pRecipeType + pRecipeName + pEOS
 pRecipeInstExpr.setParseAction( add_recipe_instance )
 
 # Geometry of compartment.
-pGeometry = GEOMETRY + Optional( pKeyValList, [] )
+pDiffusive = DIFFUSIVE
+pGeometry = Optional(pDiffusive, "non-diffusive" ) + GEOMETRY \
+        + Optional( pKeyValList, [] )
 pGeometry.setParseAction( add_geometry )
 
 # Valid YAXML expression
@@ -344,12 +347,12 @@ pSimulator.setParseAction( add_simulator )
 
 pComptType = pIdentifier 
 pComptInstName = pIdentifier 
-pComptNature = DIFFUSIVE 
-pComptInst = Optional( pComptNature, "nondiffusive") \
+pComptNature = STOCHASTIC | DETEMINISTIC
+pComptInst =  Optional( pComptNature, "deterministic" ) \
         + pComptInstName + IS + pComptType \
         + Optional( pKeyValList, [] ) + pEOS
 
-pComptInst.setParseAction( add_compt_instance )
+pComptInst.setParseAction( add_compartment_instance )
 
 pModelName = pIdentifier
 pModelStmt = ( pComptInst | pSimulator )
