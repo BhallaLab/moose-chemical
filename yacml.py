@@ -29,12 +29,17 @@ def loadModel( filename ):
     """
 
     xml = yp.parse( filename )
-    with open( '%s0.xml' % filename , 'w' ) as f:
+    
+    xml0file = '%s0.xml' % filename
+    with open( xml0file , 'w' ) as f:
         f.write( etree.tostring( xml, pretty_print = True ) )
+    logger_.info( 'Wrote xml0 to %s' % xml0file )
 
     xml = astp.flatten( xml )
-    with open( '%s1.xml' % filename, 'w' ) as f:
+    xml1file = '%s1.xml' % filename
+    with open( xml1file, 'w' ) as f:
         f.write( etree.tostring( xml, pretty_print = True ) ) 
+    logger_.info( 'Wrote xml1 to %s' % xml1file )
 
     yacml2moose.load( xml )
 

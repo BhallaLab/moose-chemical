@@ -23,9 +23,11 @@ import math
 import config
 import lxml.etree as etree
 import moose.print_utils as pu
+import utils.xml as xml
 
 from utils import test_expr as te
 from utils import helper
+
 from collections import deque
 
 logger_ = config.logger_
@@ -46,30 +48,6 @@ moose_dict_ = {
 
 # Store all moose.Table in dictionary: path : object
 tables_ = { }
-
-def get_value_from_parameter_xml( param_elem, param_name ):
-    elem = param_elem.xpath( 'parameter[@name="%s"]' % param_name )
-    if not elem:
-        return None
-    else:
-        return float( elem[0].text )
-
-def get_value_from_variable_xml( param_elem, param_name ):
-    elem = param_elem.xpath( 'variable[@name="%s"]' % param_name )
-    if not elem:
-        logger_.warn( 'Could not find paramter %s. Using 0' % param_name )
-        return 0.0
-    else:
-        return float( elem[0].text )
-
-def find_reaction_instance( root_xml, rname ):
-    reacInsts =  root_xml.xpath( 'reaction_declaration[@id="%s"]' % rname )
-    if not reacInsts:
-        logger_.warn( 'I could not find a reaction declaration %s ' % rname )
-
-    assert len( reacInsts ) == 1, 'More than one definition of %s' % rname 
-    return reacInsts[0]
-
 def helper_constant_propagation( text, reduced, unreduced ):
     # Get all identifiers which can be replaced.
     ids = helper.get_ids( text )
@@ -176,20 +154,20 @@ def init_compartment( compt_name, geometry_xml, model ):
     compt = None
     comptPath = '%s/%s' % ( model.path, compt_name )
     volume = None
-    if geomType == 'cubical':
+    if geomType == 'cube':
         compt = moose.CubeMesh( comptPath )
-        compt.volume = get_value_from_variable_xml( geometry_xml, 'volume' )
+        compt.volume = xml.get_value_from_variable_xml( geometry_xml, 'volume' )
         volume = compt.volume
-    elif geomType == 'cylinderical':
+    elif geomType == 'cylinder':
         compt = moose.CylMesh( comptPath )
         compt.x0, compt.y0, compt.z0 = 0, 0, 0
-        compt.x1 = get_value_from_variable_xml( geometry_xml, 'length' )
+        compt.x1 = xml.get_value_from_variable_xml( geometry_xml, 'length' )
         compt.y1, compt.z1 = compt.y0, compt.z0
-        compt.r0 = compt.r1 = get_value_from_variable_xml( geometry_xml, 'radius' )
-        volume = math.pi * (compt.r0 ** 2) * ( compt.x1 - compt.x0)
+        compt.r0 = compt.r1 = xml.get_value_from_variable_xml( geometry_xml, 'radius' )
+        volume = xml.get_value_from_variable_xml( geometry_xml, 'volume' )
     else:
         compt = moose.CubeMesh( comptPath )
-        compt.volume = get_value_from_variable_xml( geometry_xml, 'volume' )
+        compt.volume = xml.get_value_from_variable_xml( geometry_xml, 'volume' )
         volume = compt.volume
         logger_.warn( 'Unsupported compartment type %s. Using cube' % geomType )
     logger_.debug( '\t Added compartment\n\t %s' % helper.compt_info( compt ) )
@@ -202,6 +180,7 @@ def load_compartent( compt_xml, model ):
     logger_.info( 'Loading compartment into moose' )
     comptName = compt_xml.attrib['name']
     geometry = compt_xml.find( 'geometry' )
+    assert geometry is not None, "Need geometry information"
     compt = init_compartment( comptName, geometry, model )
     return compt
 
@@ -479,5 +458,5 @@ def load( xml ):
     outfile = '/tmp/yacml.xml' 
     with open( outfile, 'w' ) as f:
         f.write( etree.tostring( xml, pretty_print = True ) )
-    logger_.debug( '[INFO] Flattened xml is written to %s' % outfile )
+    logger_.info( '[INFO] Flattened xml is written to %s' % outfile )
     return xml

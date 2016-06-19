@@ -23,7 +23,7 @@ def find_recipe( doc, recipe_id ):
     recipe = doc.xpath( '/yacml/recipe[@id="%s"]' % recipe_id )
     if not recipe:
         msg = 'Could not find any recipe with name %s' % recipe_id 
-        msg +=  '\t I cannot continue ' 
+        msg +=  '\n\tI cannot continue ' 
         raise NameError( msg )
     assert len(recipe) == 1, "Found more the 1 recipe with id %s" % recipe_id
     return recipe[0]
@@ -41,7 +41,7 @@ def find_compartment( rootXML, compt_id ):
     cXML = rootXML.xpath( 'compartment[@id="%s"]' % compt_id )
     if not cXML:
         msg = 'Could not find any compartment with name %s' % compt_id
-        msg +=  '\t I cannot continue ' 
+        msg +=  '\n\t I cannot continue ' 
         raise NameError( msg )
 
     assert len( cXML ) == 1, 'Found more the 1 compartment with id %s' % compt_id

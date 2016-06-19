@@ -14,11 +14,14 @@ __email__            = "dilawars@ncbs.res.in"
 __status__           = "Development"
 
 import lxml
+import math
 
 import lxml.etree as etree
 import utils.helper as helper
+import utils.xml as xml
 
 from collections import defaultdict
+from copy import deepcopy
 from config import logger_
 from .pyparsing import *
 
@@ -133,13 +136,12 @@ def add_model( tokens, **kwargs ):
 def add_compt_instance( tokens, **kwargs ):
     instXml = etree.Element( 'compartment_instance' )
     instXml.attrib['type'] = tokens[0]
-    instXml.attrib['instance_of'] = tokens[1]
-    instXml.text = tokens[2]
-    
+    instXml.text = tokens[1]
+    instXml.attrib['instance_of'] = tokens[2]
     # attach all other tokesn.
     for x in tokens[3]:
         if isinstance( x, etree._Element ):
-            instXml.append( x )
+            instXml.append( deepcop( x ) )
         else:
             instXml.attrib[x[0]] = x[1]
     return instXml
@@ -151,10 +153,37 @@ def add_simulator( tokens, **kwargs ):
         simXml.attrib[k] = v
     return simXml
 
+def compute_volume( geom_xml ):
+    shape = geom_xml.attrib[ 'shape' ]
+    vol = 0.0
+    if shape == "cylinder":
+        l, r = [ 
+                xml.get_value_from_parameter_xml( geom_xml, x ) for x in 
+                [ "length", "radius" ] 
+                ]
+        vol = math.pi * r * r * l 
+    elif shape == 'cube' :
+        l, w, h = [ xml.get_value_from_parameter_xml( geom_xml, x ) for x in
+                [ "length", "width", "height" ] 
+                ]
+        vol = l * w * h
+    else:
+        logger_.warn( 'Failed to compute volume for shape %s' % shape )
+    return vol
+
+
 def add_geometry( tokens, **kwargs ):
-    print tokens
-    elem = etree.Element( 'geometry' )
-    return elem
+    geom = etree.Element( 'geometry' )
+    geom.attrib['shape'] = tokens[0]
+    for k, v in tokens[1]:
+        elem = etree.SubElement( geom, 'parameter' ) 
+        elem.attrib['name'] = k
+        attach_val_with_reduction( elem, v )
+    vol = compute_volume( geom )
+    volParam = etree.SubElement( geom, 'parameter' )
+    volParam.attrib[ 'name' ] = 'volume'
+    volParam.text = str( vol )
+    return geom
 
 ##
 # @brief Add a compartment to XML AST.
@@ -167,15 +196,12 @@ def add_compartment( tokens, **kwargs ):
     global xml_
     print( '[INFO] Adding compartment %s' % tokens )
     compt = etree.Element( 'compartment' )
-    comptGeom = etree.SubElement( compt, 'geometry' )
-    comptGeom.attrib['shape'] = tokens[0]
-
-    compt.attrib['id'] = tokens[2]
-
+    compt.attrib['id'] = tokens[1]
+    compt.append( deepcopy( tokens[2] ) ) 
     # And append rest of the xml/
     for x in tokens[3:]:
         if isinstance( x, etree._Element ):
-            compt.append( x )
+            compt.append( deepcopy( x ) )
     xml_.append( compt )
     return compt
 
