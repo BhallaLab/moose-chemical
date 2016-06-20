@@ -44,6 +44,7 @@ def add_variable( tokens, **kwargs):
     return var
 
 def add_species( tokens, **kwargs ):
+    print tokens
     sp = etree.Element( 'species' )
     sp.attrib['name'] = tokens[2]
     attribs = tokens[3]
@@ -259,6 +260,8 @@ pIdentifier = pyparsing_common.identifier
 # Make sure no keyword is matched as identifier.
 pIdentifier.ignore( anyKeyword )
 
+# Delimited list or separated list.
+delimitedList_ = lambda x, y: delimitedList( x, y ) + Optional( y ).suppress()
 
 pComptName = pIdentifier
 pSpeciesName = pIdentifier
@@ -273,7 +276,7 @@ quotedString.setParseAction( lambda x: (''.join(x)).replace('"', '') )
 
 pKeyVals = Group( pIdentifier + EQUAL + pValue )
 
-pKeyValList = LBRAC + Group( delimitedList( pKeyVals )) + RBRAC
+pKeyValList = LBRAC + Group( delimitedList_( pKeyVals, "," )) + RBRAC
 pSpeciesExpr = Optional(BUFFERED, 'false') + SPECIES + pSpeciesName +  pKeyValList + pEOS
 pSpeciesExpr.setParseAction( add_species )
 
@@ -282,8 +285,8 @@ pStoichNumber = Optional(Word(nums), '1')
 pSpeciesNameWithStoichCoeff = Group( pStoichNumber + pSpeciesName )
 
 # Expression for reactions.
-pSubstrasteList = Group( delimitedList( pSpeciesNameWithStoichCoeff, '+' ) )
-pProductList = Group( delimitedList( pSpeciesNameWithStoichCoeff, '+' ) )
+pSubstrasteList = Group( delimitedList_( pSpeciesNameWithStoichCoeff, '+' ) )
+pProductList = Group( delimitedList_( pSpeciesNameWithStoichCoeff, '+' ) )
 
 # Reactions. Parses expressions like the following.
 #
