@@ -316,6 +316,10 @@ def load_species( species_xml, root_path ):
     else:
         pool = moose.Pool( speciesPath )
 
+    if 'diffusion_constant' in species_xml.attrib:
+        pool.diffConst = eval( species_xml.attrib['diffusion_constant'] )
+        logger_.debug( '\tDiffusion const = %s' % pool.diffConst )
+
     params = species_xml.xpath( 'parameter' )
     assert params, 'Need at least N or conc field'
     for p in params:
@@ -360,11 +364,11 @@ def setup_solver( compt_xml, compt ):
     logger_.info( "Setting up solver in compartment %s" % compt.path )
     st = moose.Stoich( '%s/stoich' % compt.path )
     if compt_xml.attrib['type'] == "stochastic":
-        logger_.debug( '\tAdded stochastic solver' )
+        logger_.info( '\tAdded stochastic solver' )
         s = moose.Gsolve( '%s/gsolve' % st.path )
     else:
         s = moose.Ksolve( '%s/ksolve' % st.path )
-        logger_.debug( '\tAdded deterministic solver' )
+        logger_.info( '\tAdded deterministic solver' )
 
     st.compartment = compt
     st.ksolve = s
@@ -374,7 +378,7 @@ def setup_solver( compt_xml, compt ):
     if diffusion:
         dsolve = moose.Dsolve( '%s/dsolve' % st.path )
         st.dsolve = dsolve
-        logger_.debug( '\tEnabled diffusion in compartment' )
+        logger_.info( '\tEnabled diffusion in compartment' )
         try:
             compt.diffLength = float( diffusion[0].text )
             logger_.info( '\t\tdiffLength is set to %s' % compt.diffLength )
@@ -383,7 +387,7 @@ def setup_solver( compt_xml, compt ):
                     'Compartment %s does not support paramter diffLength' %
                     compt )
 
-    st.path = '%s/##' % compt.path
+    st.path = "%s/##" % compt.path
     logger_.debug( '\tSet solver path = %s' % st.path )
 
 def setup_recorder( ):
