@@ -47,7 +47,7 @@ moose_dict_ = {
         }
 
 # Store all moose.Table in dictionary: path : object
-tables_ = { }
+tables_ = [ ]
 def helper_constant_propagation( text, reduced, unreduced ):
     # Get all identifiers which can be replaced.
     ids = helper.get_ids( text )
@@ -251,7 +251,7 @@ def attach_table_to_species( moose_pool, field_name ):
     getField = 'get' + field_name[0].upper() + field_name[1:]
     try:
         moose.connect( tab, 'requestOut', moose_pool, getField )
-        tables_[ tabPath ] = tab
+        tables_.append( tab )
     except Exception as e:
         logger_.warn( 'Failed to add a Table on %s.%s' % ( moose_pool.path,
             field_name )
@@ -399,7 +399,9 @@ def setup_recorder( ):
     """
     global tables_
     streamer = moose.Streamer( '/yacml/streamer' )
-    streamer.addTables( tables_.values( ) )
+    logger_.debug( 'Added streamer %s' % streamer )
+    streamer.addTables( tables_ )
+    logger_.debug( '|| Tables %s' % str( tables_) )
     return streamer
 
 def load_chemical_reactions_in_compartment( subnetwork, compt ):
