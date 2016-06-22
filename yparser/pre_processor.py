@@ -97,7 +97,7 @@ def build_global_expression_graph( network ):
             logger_.debug("Expr of %s depends on %s" % (k, otherVars))
             for v in otherVars:
                 global_expr_g_.add_edge(k, v)
-    logger_.debug("Global variables: %s" % global_expr_g_.nodes())
+    # logger_.debug("Global variables: %s" % global_expr_g_.nodes())
     return global_expr_g_
 
 def flatten_global_expressions( network ):

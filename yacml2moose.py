@@ -33,7 +33,7 @@ from collections import deque
 logger_ = config.logger_
 
 logger_.debug( 'Using moose from %s' % moose.__file__ )
-logger_.debug( '\tVersion %s' % moose.__version__ )
+logger_.debug( '| Version %s' % moose.__version__ )
 
 # Some more global variables such as volume of compartment, length and radius.
 globals_ = { }
@@ -55,10 +55,10 @@ def helper_constant_propagation( text, reduced, unreduced ):
     for iden in ids:
         # replace from the unreduced first.
         if iden in unreduced:
-            logger_.debug( '== Replacing %s' % iden )
+            logger_.debug( '|| Replacing %s' % iden )
             newText = newText.replace( iden, unreduced[iden] )
         elif iden in reduced:
-            logger_.debug( '== Replacing %s' % iden )
+            logger_.debug( '|| Replacing %s' % iden )
             newText = newText.replace( iden, reduced[iden] )
     
     # If no more changes are possible, return the result else call the function
@@ -124,8 +124,8 @@ def do_constant_propagation_on_elem( elem ):
     if elem.tag in [ 'variable', 'parameter' ]:
         # A variable may refer to another variable in its expression. It may
         # also refer to another global variable.
-        logger_.debug( 'Global variable  %s = %s' % ( elem.attrib['name'], globalVars ))
-        logger_.debug( 'Local variable %s = %s' % ( elem.attrib['name'], localVars )) 
+        # logger_.debug( 'Global variable  %s = %s' % ( elem.attrib['name'], globalVars ))
+        # logger_.debug( 'Local variable %s = %s' % ( elem.attrib['name'], localVars )) 
         elem = replace_variable_value( elem, localVars, globalVars )
 
 ##
@@ -170,7 +170,7 @@ def init_compartment( compt_name, geometry_xml, model ):
         compt.volume = xml.get_value_from_parameter_xml( geometry_xml, 'volume' )
         volume = compt.volume
         logger_.warn( 'Unsupported compartment type %s. Using cube' % geomType )
-    logger_.debug( '\t Added compartment\n\t %s' % helper.compt_info( compt ) )
+    logger_.debug( '|| Added compartment\n\t %s' % helper.compt_info( compt ) )
     assert volume > 0, "Volume of compartment must be > 0.0 "
     globals_['volume'] = volume
     return compt
@@ -217,7 +217,7 @@ def attach_parateter_to_reac( param, reac, chem_net_path ):
     if param.attrib[ 'is_reduced' ] == 'true':
         reac.setField( fieldName, float( param.text ) )
         logger_.debug( 
-                '\tParameter %s.%s=%s' % (reac.path, fieldName, param.text)
+                '|| Parameter %s.%s=%s' % (reac.path, fieldName, param.text)
                 )
     else:
         f = moose.Function( '%s/set_%s' % ( reac.path, fieldName ) )
@@ -232,7 +232,7 @@ def attach_parateter_to_reac( param, reac, chem_net_path ):
         f.expr = expr
         reacF = 'set' + fieldName[0].upper() + fieldName[1:]
         logger_.debug(
-                '\t Parameter (expr) %s.%s = %s' % ( reac.path, reacF, f.expr )
+                '|| Parameter (expr) %s.%s = %s' % ( reac.path, reacF, f.expr )
                 )
         moose.connect( f, 'valueOut', reac, reacF )
 
@@ -242,14 +242,13 @@ def attach_table_to_species( moose_pool, field_name ):
     global tables_
     global current_chemical_subnetwork_name_
     tabPath = '%s/table_%s' % (moose_pool.path, field_name ) 
-    logger_.info( 'Creating a moose.Table2 %s' % tabPath )
     tab = moose.Table2( tabPath )
+    logger_.info( 'Created %s' % tab )
     tab.name = '%s.%s.%s' % ( current_chemical_subnetwork_name_
             , moose_pool.name
             , field_name 
             )
     getField = 'get' + field_name[0].upper() + field_name[1:]
-
     try:
         moose.connect( tab, 'requestOut', moose_pool, getField )
         tables_[ tabPath ] = tab
@@ -274,7 +273,7 @@ def set_pool_conc( pool, pool_xml, compt_path ):
     if isReduced == 'true':
         pool.setField( '%sInit' % fieldName, float(expr) )
         logger_.debug( 
-                '\tSet field %s = %s' % (
+                '|| Set field %s = %s' % (
                     fieldName, pool.getField( '%sInit' % fieldName ) )
                 )
         return pool
@@ -289,10 +288,13 @@ def set_pool_conc( pool, pool_xml, compt_path ):
         poolpath = '%s/%s' % ( compt_path, x )
         assert moose.exists( poolpath ), '%s does not exists' % poolpath
         moose.connect( poolpath, '%sOut' % fieldName, f.x[i], 'input' )
-
+        logger_.debug( 
+                '||| Connecting %s.%s to function input' % ( poolpath, fieldName )
+            )
     try:
         toSet = 'set%s%s' % ( fieldName[0].upper(), fieldName[1:] )
         moose.connect( f, 'valueOut', pool, toSet )
+        logger_.debug( '\tSet field %s = %s' % ( toSet, f.expr) )
     except Exception as e:
         logger_.error( "I cannot use this expression on Function" )
         logger_.error( "\t The expr was %s" % expr )
@@ -309,15 +311,15 @@ def load_species( species_xml, root_path ):
     # This is neccessary to construct unique names for tables.
     current_chemical_subnetwork_name_ = root_path.split('/')[-1]
 
-    logger_.info( 'Creating Pool/BufPool, path=%s' % speciesPath )
 
     if species_xml.attrib.get('is_buffered', 'false' ) == 'true':
         pool = moose.BufPool( speciesPath )
     else:
         pool = moose.Pool( speciesPath )
 
+    logger_.info( 'Created %s' % pool )
     if 'diffusion_constant' in species_xml.attrib:
-        pool.diffConst = eval( species_xml.attrib['diffusion_constant'] )
+        pool.diffConst = helper.to_float( species_xml.attrib['diffusion_constant'] )
         logger_.debug( '\tDiffusion const = %s' % pool.diffConst )
 
     params = species_xml.xpath( 'parameter' )
@@ -340,13 +342,13 @@ def load_reaction( reac_xml, chem_net_path ):
         subName = sub.text
         subPool = moose.element( '%s/%s' % (chem_net_path, subName ) ) 
         for i in range( int( sub.attrib['stoichiometric_number']) ):
-            logger_.debug( '\tAdding subtrate %s' % subPool.path )
+            logger_.debug( '|| Adding subtrate %s' % subPool.path )
             moose.connect( r, 'sub', subPool, 'reac' )
     for prd in reac_xml.xpath( 'product' ):
         prdName = prd.text
         prdPool = moose.element( '%s/%s' % (chem_net_path, prdName ) ) 
         for i in range( int( prd.attrib['stoichiometric_number']) ):
-            logger_.debug( '\tAdding product  %s' % prdPool.path )
+            logger_.debug( '|| Adding product  %s' % prdPool.path )
             moose.connect( r, 'prd', prdPool, 'reac' )
     if instOf:
         rInst = xml.find_reaction_instance( reac_xml.getparent(), instOf )
@@ -366,6 +368,8 @@ def setup_solver( compt_xml, compt ):
     if compt_xml.attrib['type'] == "stochastic":
         logger_.info( '\tAdded stochastic solver' )
         s = moose.Gsolve( '%s/gsolve' % st.path )
+        # This is essential otherwise the stimulus will not be computed.
+        s.useClockedUpdate = True
     else:
         s = moose.Ksolve( '%s/ksolve' % st.path )
         logger_.info( '\tAdded deterministic solver' )
@@ -388,7 +392,7 @@ def setup_solver( compt_xml, compt ):
                     compt )
 
     st.path = "%s/##" % compt.path
-    logger_.debug( '\tSet solver path = %s' % st.path )
+    logger_.debug( '|| Set solver path = %s' % st.path )
 
 def setup_recorder( ):
     """Setup a moose.Streamer to store all tables into one file.
@@ -407,7 +411,7 @@ def load_chemical_reactions_in_compartment( subnetwork, compt ):
 
 def setup_run( sim_xml, streamer = None ):
     global modelname_
-    simTime = eval( sim_xml.attrib['sim_time'] )
+    simTime = helper.to_float( sim_xml.attrib['sim_time'] )
     logger_.info( 'Running MOOSE for %s seconds' % simTime )
     if sim_xml.attrib.get('format') is not None:
         format_ = sim_xml.attrib[ 'format' ]
@@ -419,8 +423,8 @@ def setup_run( sim_xml, streamer = None ):
     # If plot_dt is defined, use it. Only effective on moose.Table2.
     # By default it is per 1 seconds.
     if sim_xml.attrib.get( 'record_dt', False ):
-        moose.setClock( 18, eval( sim_xml.attrib['record_dt' ] ) )
-        logger_.debug( "Set dt of moose.Table2 = %s" % sim_xml.attrib['record_dt'] )
+        moose.setClock( 18, helper.to_float( sim_xml.attrib['record_dt' ] ) )
+        logger_.debug( "|| Set dt of moose.Table2 = %s" % sim_xml.attrib['record_dt'] )
 
     moose.reinit( )
     moose.start( simTime, 1 )

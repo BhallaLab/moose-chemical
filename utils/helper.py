@@ -30,13 +30,6 @@ def to_bool(arg):
         return False
     return True
 
-def to_float(string):
-    """Convert a given string to float """
-    string = string.replace('"', '')
-    return float(eval(string))
-
-
-
 def get_ids( expr ):
     # The expression might also have ite-expression of muparser.
     itePat = re.compile( r'(.+?)\?(.+?)\:(.+)' )
@@ -78,10 +71,17 @@ def reduce_expr( expr ):
                 )
         isReduced = 'true'
     except Exception as e:
-        logger_.debug( 'Failed to reduce %s' % expr )
-        logger_.debug( '\tError was %s' % e )
+        # logger_.debug( 'Failed to reduce %s' % expr )
+        # logger_.debug( '\tError was %s' % e )
         val = expr 
     return str(val), isReduced
+
+def to_float( expr ):
+    val, isReduced = reduce_expr( expr )
+    if isReduced:
+        return float(val)
+    else:
+        raise RuntimeError( 'Failed to convert to float : %s' % expr )
 
 def compt_info( compt ):
     """Get the compartment info as string"""
