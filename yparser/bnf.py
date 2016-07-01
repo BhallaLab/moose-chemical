@@ -235,14 +235,15 @@ BUFFERED = Keyword( "buffered" ).setParseAction( lambda x: 'true' )
 END = Keyword("end").suppress()
 SIMULATOR = Keyword( "simulator" )
 STOCHASTIC = Keyword( "stochastic" )
-DETEMINISTIC = Keyword( "deterministic" ) | Keyword( "well-mixed" )
+DETERMINISTIC = Keyword( "deterministic" ) | Keyword( "well-mixed" )
 DIFFUSIVE = Keyword( "diffusive" )
+NONDIFFUSIVE = Keyword( "non-diffusive")
 
 anyKeyword = COMPARTMENT | RECIPE_BEGIN | MODEL \
         | HAS | IS | SPECIES | REACTION \
         | GEOMETRY | VAR | CONST | BUFFERED | END \
-        | DETEMINISTIC | DETEMINISTIC \
-        | DIFFUSIVE | SIMULATOR 
+        | DETERMINISTIC \
+        | DIFFUSIVE | SIMULATOR | NONDIFFUSIVE
 
 # literals.
 pEOS = Literal( ";" ).suppress()
@@ -320,9 +321,7 @@ pRecipeInstExpr = pRecipeType + pRecipeName + pEOS
 pRecipeInstExpr.setParseAction( add_recipe_instance )
 
 # Geometry of compartment.
-pDiffusive = DIFFUSIVE
-pGeometry = Optional(pDiffusive, "non-diffusive" ) + GEOMETRY \
-        + Optional( pKeyValList, [] )
+pGeometry = GEOMETRY + Optional( pKeyValList, [] )
 pGeometry.setParseAction( add_geometry )
 
 # Valid YAXML expression
@@ -350,7 +349,7 @@ pSimulator.setParseAction( add_simulator )
 
 pComptType = pIdentifier 
 pComptInstName = pIdentifier 
-pComptNature = STOCHASTIC | DETEMINISTIC
+pComptNature = STOCHASTIC | DETERMINISTIC
 pComptInst =  Optional( pComptNature, "deterministic" ) \
         + pComptInstName + IS + pComptType \
         + Optional( pKeyValList, [] ) + pEOS

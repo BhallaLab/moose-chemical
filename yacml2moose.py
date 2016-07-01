@@ -378,7 +378,7 @@ def setup_solver( compt_xml, compt ):
     st.ksolve = s
 
     # Enable diffusion in compartment.
-    diffusion = compt_xml.xpath( 'variable[@name="diffusion_length"]' )
+    diffusion = compt_xml.attrib.get( "diffusion_length", 0 )
     if diffusion:
         dsolve = moose.Dsolve( '%s/dsolve' % st.path )
         st.dsolve = dsolve
