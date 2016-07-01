@@ -175,9 +175,8 @@ def compute_volume( geom_xml ):
 
 def add_geometry( tokens, **kwargs ):
     geom = etree.Element( 'geometry' )
-    geom.attrib['diffusion'] = tokens[0]
-    geom.attrib['shape'] = tokens[1]
-    for k, v in tokens[2]:
+    geom.attrib['shape'] = tokens[0]
+    for k, v in tokens[1]:
         elem = etree.SubElement( geom, 'parameter' ) 
         elem.attrib['name'] = k
         attach_val_with_reduction( elem, v )
