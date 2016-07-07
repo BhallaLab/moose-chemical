@@ -215,10 +215,9 @@ def attach_parateter_to_reac( param, reac, chem_net_path ):
     fieldName = param.attrib[ 'name' ]
     fieldName = moose_dict_.get( fieldName, fieldName )
     if param.attrib[ 'is_reduced' ] == 'true':
-        reac.setField( fieldName, float( param.text ) )
-        logger_.debug( 
-                '|| Parameter %s.%s=%s' % (reac.path, fieldName, param.text)
-                )
+        val = helper.to_float( param.text )
+        reac.setField( fieldName, val )
+        logger_.debug( '|| Parameter %s.%s=%s' % (reac.path, fieldName, val))
     else:
         f = moose.Function( '%s/set_%s' % ( reac.path, fieldName ) )
         connections, expr = rewrite_function_expression( param.text )
@@ -234,6 +233,7 @@ def attach_parateter_to_reac( param, reac, chem_net_path ):
         logger_.debug(
                 '|| Parameter (expr) %s.%s = %s' % ( reac.path, reacF, f.expr )
                 )
+        logger_.debug( '|| Added connections %s' % connections )
         moose.connect( f, 'valueOut', reac, reacF )
 
 def attach_table_to_species( moose_pool, field_name ):
@@ -241,7 +241,7 @@ def attach_table_to_species( moose_pool, field_name ):
     """
     global tables_
     global current_chemical_subnetwork_name_
-    tabPath = '%s/table_%s' % (moose_pool.path, field_name ) 
+    tabPath = '%s/table_%s' % (moose_pool.path, field_name) 
     tab = moose.Table2( tabPath )
     logger_.info( 'Created %s' % tab )
     tab.name = '%s.%s.%s' % ( current_chemical_subnetwork_name_
@@ -270,6 +270,8 @@ def set_pool_conc( pool, pool_xml, compt_path ):
     # Set pool properties.
     expr, isReduced = helper.reduce_expr(pool_xml.text)
     fieldName = pool_xml.attrib['name'].lower( )
+    # Make sure that things are intialized properly
+    pool.nInit = 0.0
     if isReduced == 'true':
         pool.setField( '%sInit' % fieldName, float(expr) )
         logger_.debug( 
@@ -317,7 +319,6 @@ def load_species( species_xml, root_path ):
     else:
         pool = moose.Pool( speciesPath )
 
-    logger_.info( 'Created %s' % pool )
     if 'diffusion_constant' in species_xml.attrib:
         pool.diffConst = helper.to_float( species_xml.attrib['diffusion_constant'] )
         logger_.debug( '\tDiffusion const = %s' % pool.diffConst )
@@ -331,6 +332,10 @@ def load_species( species_xml, root_path ):
     recordElem = species_xml.xpath( 'variable[@name="record"]' )
     if recordElem:
         attach_table_to_species( pool, recordElem[0].text )
+
+    logger_.info( 
+            'Created %s with n=%s, diff_const =%s' % (pool, pool.n, pool.diffConst) 
+        )
     return p
 
 def load_reaction( reac_xml, chem_net_path ):
@@ -411,6 +416,22 @@ def load_chemical_reactions_in_compartment( subnetwork, compt ):
     [ load_species( c, netPath ) for c in subnetwork.xpath('species' ) ]
     [ load_reaction( r, netPath ) for r in subnetwork.xpath('reaction') ]
 
+def print_summary( ):
+    pools = moose.wildcardFind( '/yacml/##[TYPE=PoolBase]' )
+    zombiePools = moose.wildcardFind( '/yacml/##[TYPE=ZombiePool]' )
+    summary = ''
+    for p in pools + zombiePools:
+        pName = "/".join(p.path.split('/')[-2:])
+        if not p.n < float('Inf'):
+            raise ValueError( 
+                    'Invalid value of molecules %s for  %s' % ( p.n, pName )
+                    )
+        summary += '%s : %s \n' % ( pName, p.n )
+    print( 'Summary : ')
+    print( "=".join( [ ] * 80 ) )
+    print( summary )
+
+
 def setup_run( sim_xml, streamer = None ):
     global modelname_
     simTime = helper.to_float( sim_xml.attrib['sim_time'] )
@@ -419,16 +440,17 @@ def setup_run( sim_xml, streamer = None ):
         format_ = sim_xml.attrib[ 'format' ]
     else:
         format_ = 'csv'
-    streamer.outfile = '%s.%s' %  ( modelname_, format_ )
-    logger_.info( 'Saving streamer file to %s' % streamer.outfile )
+    if streamer is not None:
+        streamer.outfile = '%s.%s' %  ( modelname_, format_ )
+        logger_.info( 'Saving streamer file to %s' % streamer.outfile )
 
     # If plot_dt is defined, use it. Only effective on moose.Table2.
     # By default it is per 1 seconds.
     if sim_xml.attrib.get( 'record_dt', False ):
         moose.setClock( 18, helper.to_float( sim_xml.attrib['record_dt' ] ) )
         logger_.debug( "|| Set dt of moose.Table2 = %s" % sim_xml.attrib['record_dt'] )
-
     moose.reinit( )
+    print_summary( )
     moose.start( simTime, 1 )
 
 def load_xml( xml ):
