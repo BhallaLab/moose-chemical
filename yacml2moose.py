@@ -40,7 +40,7 @@ globals_ = { }
 modelname_ = None
 
 # When set to true, record all function output in table.
-debugMode_ = Fals;g;
+debugMode_ = False
 
 # Required to construct a unique name for moose.Tables
 current_chemical_subnetwork_name_ = None
@@ -189,7 +189,7 @@ def load_compartent( compt_xml, model ):
 
 def get_table_name( parent_name, name ):
     global current_chemical_subnetwork_name_
-    return '%s/%s/%s' % ( current_chemical_subnetwork_name_, parent_name, name )
+    return '%s.%s.%s' % ( current_chemical_subnetwork_name_, parent_name, name )
 
 ##
 # @brief Replace other chemical species with x0, x1, x2 etc. Return the new
@@ -227,7 +227,7 @@ def attach_parateter_to_reac( param, reac, chem_net_path ):
         reac.setField( fieldName, val )
         logger_.debug( '|| Parameter %s.%s=%s' % (reac.path, fieldName, val))
     else:
-        f = moose.Function( '%s/set_%s' % ( reac.path, fieldName ) )
+        f = moose.Function( '%s/func_%s' % ( reac.path, fieldName ) )
         connections, expr = rewrite_function_expression( param.text )
         f.x.num = len( connections )
         for i, (x, y) in enumerate( connections ):
@@ -244,10 +244,10 @@ def attach_parateter_to_reac( param, reac, chem_net_path ):
         logger_.debug( '|| Added connections %s' % connections )
         moose.connect( f, 'valueOut', reac, reacF )
         if debugMode_:
-            ft = moose.Table2( '%s/tab_%s' ( reac.path, fieldName ) )
+            ft = moose.Table2( '%s/tab_%s' % ( reac.path, fieldName ) )
             moose.connect( ft, 'requestOut', f, 'getValue' )
-            ft.name = get_table_name( f.name, fieldName )
-            tables_[ ft.name ] = ft
+            ft.name = get_table_name( reac.name, fieldName )
+            tables_.append( ft )
 
 
 def attach_table_to_species( moose_pool, field_name ):
@@ -501,7 +501,9 @@ def load_xml( xml ):
 def load( xml, **kwargs ):
     # Before loading AST xml into MOOSE, replace each variable by its value
     # whenever posiible.
+    global debugMode_
     debugMode_ = kwargs.get( 'debug', False )
+    logger_.info( 'Debug == %s' % debugMode_ )
     do_constant_propagation( xml )
     load_xml( xml )
     outfile = '/tmp/yacml.xml' 
