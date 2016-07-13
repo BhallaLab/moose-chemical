@@ -24,7 +24,7 @@ import lxml.etree as etree
 
 logger_ = config.logger_
 
-def loadModel( filename ):
+def loadModel( filename, **kwargs ):
     """Main entry function
     """
 
@@ -41,7 +41,7 @@ def loadModel( filename ):
         f.write( etree.tostring( xml, pretty_print = True ) ) 
     logger_.info( 'Wrote xml1 to %s' % xml1file )
 
-    yacml2moose.load( xml )
+    yacml2moose.load( xml, **kwargs )
 
 # if __name__ == '__main__':
 #     import argparse

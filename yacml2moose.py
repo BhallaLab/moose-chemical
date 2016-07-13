@@ -39,6 +39,9 @@ logger_.debug( '| Version %s' % moose.__version__ )
 globals_ = { }
 modelname_ = None
 
+# When set to true, record all function output in table.
+debugMode_ = Fals;g;
+
 # Required to construct a unique name for moose.Tables
 current_chemical_subnetwork_name_ = None
 
@@ -184,6 +187,10 @@ def load_compartent( compt_xml, model ):
     compt = init_compartment( comptName, geometry, model )
     return compt
 
+def get_table_name( parent_name, name ):
+    global current_chemical_subnetwork_name_
+    return '%s/%s/%s' % ( current_chemical_subnetwork_name_, parent_name, name )
+
 ##
 # @brief Replace other chemical species with x0, x1, x2 etc. Return the new
 # expression along with a map. Make sure global keyword such as volume, t does
@@ -212,6 +219,7 @@ def rewrite_function_expression( expr ):
     return replacePairs, expr
 
 def attach_parateter_to_reac( param, reac, chem_net_path ):
+    global debugMode_
     fieldName = param.attrib[ 'name' ]
     fieldName = moose_dict_.get( fieldName, fieldName )
     if param.attrib[ 'is_reduced' ] == 'true':
@@ -235,6 +243,12 @@ def attach_parateter_to_reac( param, reac, chem_net_path ):
                 )
         logger_.debug( '|| Added connections %s' % connections )
         moose.connect( f, 'valueOut', reac, reacF )
+        if debugMode_:
+            ft = moose.Table2( '%s/tab_%s' ( reac.path, fieldName ) )
+            moose.connect( ft, 'requestOut', f, 'getValue' )
+            ft.name = get_table_name( f.name, fieldName )
+            tables_[ ft.name ] = ft
+
 
 def attach_table_to_species( moose_pool, field_name ):
     """Create a moose.Table to read the field_name 
@@ -271,7 +285,6 @@ def set_pool_conc( pool, pool_xml, compt_path ):
     expr, isReduced = helper.reduce_expr(pool_xml.text)
     fieldName = pool_xml.attrib['name'].lower( )
     # Make sure that things are intialized properly
-    pool.nInit = 0.0
     if isReduced == 'true':
         pool.setField( '%sInit' % fieldName, float(expr) )
         logger_.debug( 
@@ -318,6 +331,9 @@ def load_species( species_xml, root_path ):
         pool = moose.BufPool( speciesPath )
     else:
         pool = moose.Pool( speciesPath )
+
+    # Just to be safe.
+    pool.nInit = 0.0
 
     if 'diffusion_constant' in species_xml.attrib:
         pool.diffConst = helper.to_float( species_xml.attrib['diffusion_constant'] )
@@ -482,9 +498,10 @@ def load_xml( xml ):
 # @param xml Input model AST in XML.
 #
 # @return  Root path of model in MOOSE, /yacml.
-def load( xml ):
+def load( xml, **kwargs ):
     # Before loading AST xml into MOOSE, replace each variable by its value
     # whenever posiible.
+    debugMode_ = kwargs.get( 'debug', False )
     do_constant_propagation( xml )
     load_xml( xml )
     outfile = '/tmp/yacml.xml' 
