@@ -24,6 +24,7 @@ import config
 import lxml.etree as etree
 import moose.print_utils as pu
 import utils.xml as xml
+import utils.to_graphviz as togv
 
 from utils import test_expr as te
 from utils import helper
@@ -51,6 +52,7 @@ moose_dict_ = {
 
 # Store all moose.Table in dictionary: path : object
 tables_ = [ ]
+
 def helper_constant_propagation( text, reduced, unreduced ):
     # Get all identifiers which can be replaced.
     ids = helper.get_ids( text )
@@ -288,7 +290,7 @@ def set_pool_conc( pool, pool_xml, compt_path ):
     if isReduced == 'true':
         pool.setField( '%sInit' % fieldName, float(expr) )
         logger_.debug( 
-                '|| Set field %s = %s' % (
+                '-- Set field %sInit = %s' % (
                     fieldName, pool.getField( '%sInit' % fieldName ) )
                 )
         return pool
@@ -337,7 +339,6 @@ def load_species( species_xml, root_path ):
 
     if 'diffusion_constant' in species_xml.attrib:
         pool.diffConst = helper.to_float( species_xml.attrib['diffusion_constant'] )
-        logger_.debug( '\tDiffusion const = %s' % pool.diffConst )
 
     params = species_xml.xpath( 'parameter' )
     assert params, 'Need at least N or conc field'
@@ -349,16 +350,16 @@ def load_species( species_xml, root_path ):
     if recordElem:
         attach_table_to_species( pool, recordElem[0].text )
 
-    logger_.info( 
-            'Created %s with n=%s, diff_const =%s' % (pool, pool.n, pool.diffConst) 
-        )
+    logger_.info( 'Created %s \n\t|| %s' % (pool, helper.pool_info(pool) ) )
     return p
 
 def load_reaction( reac_xml, chem_net_path ):
     logger_.info( 'Loading reaction %s' % reac_xml.attrib['name'] )
     instOf  = reac_xml.attrib.get( 'instance_of', None )
     reacPath = '%s/%s' % ( chem_net_path, reac_xml.attrib['name'] )
+
     r = moose.Reac( reacPath )
+
     for sub in reac_xml.xpath( 'substrate' ):
         subName = sub.text
         subPool = moose.element( '%s/%s' % (chem_net_path, subName ) ) 
@@ -433,6 +434,8 @@ def load_chemical_reactions_in_compartment( subnetwork, compt ):
     [ load_reaction( r, netPath ) for r in subnetwork.xpath('reaction') ]
 
 def print_summary( ):
+    global modelname_
+    togv.write_graphviz( modelname_ )
     pools = moose.wildcardFind( '/yacml/##[TYPE=PoolBase]' )
     zombiePools = moose.wildcardFind( '/yacml/##[TYPE=ZombiePool]' )
     summary = ''
@@ -442,7 +445,7 @@ def print_summary( ):
             raise ValueError( 
                     'Invalid value of molecules %s for  %s' % ( p.n, pName )
                     )
-        summary += '%s : %s \n' % ( pName, p.n )
+        summary += '%12s : %s \n' % ( pName, p.n )
     print( 'Summary : ')
     print( "=".join( [ ] * 80 ) )
     print( summary )

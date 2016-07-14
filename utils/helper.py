@@ -103,3 +103,10 @@ def compt_info( compt ):
     else:
         info += "Unknown/unsupported compartment type %s" % compt
     return info
+
+def pool_info( pool ):
+    info = ''
+    info += ' n0 = %f,' % pool.nInit 
+    info += ' n =  %s,' % pool.n 
+    info += ' diffConst = %s,' % pool.diffConst 
+    return info

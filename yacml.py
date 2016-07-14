@@ -28,6 +28,7 @@ def loadModel( filename, **kwargs ):
     """Main entry function
     """
 
+    config.args_['input_flie'] = filename
     xml = yp.parse( filename )
     
     xml0file = '%s0.xml' % filename
