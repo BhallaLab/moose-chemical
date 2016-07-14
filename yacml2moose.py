@@ -328,7 +328,7 @@ def load_species( species_xml, root_path ):
     # This is neccessary to construct unique names for tables.
     current_chemical_subnetwork_name_ = root_path.split('/')[-1]
 
-
+    assert not moose.exists( speciesPath )
     if species_xml.attrib.get('is_buffered', 'false' ) == 'true':
         pool = moose.BufPool( speciesPath )
     else:
@@ -358,6 +358,7 @@ def load_reaction( reac_xml, chem_net_path ):
     instOf  = reac_xml.attrib.get( 'instance_of', None )
     reacPath = '%s/%s' % ( chem_net_path, reac_xml.attrib['name'] )
 
+    assert not moose.exists( reacPath ), 'reaction already exists %s' % reacPath
     r = moose.Reac( reacPath )
 
     for sub in reac_xml.xpath( 'substrate' ):
@@ -386,7 +387,9 @@ def setup_solver( compt_xml, compt ):
 
     """
     logger_.info( "Setting up solver in compartment %s" % compt.path )
-    st = moose.Stoich( '%s/stoich' % compt.path )
+    stoichPath = '%s/stoich' % compt.path 
+    assert not moose.exists( stoichPath )
+    st = moose.Stoich( stoichPath )
     if compt_xml.attrib['type'] == "stochastic":
         logger_.info( '\tAdded stochastic solver' )
         s = moose.Gsolve( '%s/gsolve' % st.path )
@@ -420,6 +423,7 @@ def setup_recorder( ):
     """Setup a moose.Streamer to store all tables into one file.
     """
     global tables_
+    assert not moose.exists( '/yacml/streamer' )
     streamer = moose.Streamer( '/yacml/streamer' )
     logger_.debug( 'Added streamer %s' % streamer )
     streamer.addTables( tables_ )
