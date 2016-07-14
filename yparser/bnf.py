@@ -88,18 +88,19 @@ def add_reaction_declaration( tokens, **kwargs ):
 def add_reaction_instantiation( tokens, **kwargs ):
     reac = etree.Element( 'reaction' )
     subsList, r, prdList = tokens
-    nameOfReac = ''
+    subs, prds  = [], []
     for sub in subsList:
         subXml = etree.SubElement( reac, 'substrate' )
         subXml.attrib['stoichiometric_number'] = sub[0]
         subXml.text = sub[1]
-        nameOfReac += sub[1]
-    nameOfReac += '__TO__'
+        subs.append( sub[1] )
     for prd in prdList:
         prdXml = etree.SubElement( reac, 'product' )
         prdXml.attrib['stoichiometric_number'] = prd[0]
-        prdXml.text = prd[1]
-        nameOfReac += prd[1]
+        prdXml.text = prd[1] 
+        prds.append( prd[1] )
+
+    nameOfReac = '%s<-->%s' % ('+'.join( subs ), '+'.join( prds ) )
     
     # A simple identifier means reaction is declared elsewhere, a list means
     # that key, value pairs are declared.
