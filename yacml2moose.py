@@ -328,7 +328,7 @@ def load_species( species_xml, root_path ):
     # This is neccessary to construct unique names for tables.
     current_chemical_subnetwork_name_ = root_path.split('/')[-1]
 
-    assert not moose.exists( speciesPath )
+    assert not moose.exists( speciesPath ), 'Already exists %s' % speciesPath
     if species_xml.attrib.get('is_buffered', 'false' ) == 'true':
         pool = moose.BufPool( speciesPath )
     else:
@@ -449,7 +449,7 @@ def print_summary( ):
             raise ValueError( 
                     'Invalid value of molecules %s for  %s' % ( p.n, pName )
                     )
-        summary += '%12s : %s \n' % ( pName, p.n )
+        summary += '%20s : %s \n' % ( pName, p.n )
     print( 'Summary : ')
     print( "=".join( [ ] * 80 ) )
     print( summary )

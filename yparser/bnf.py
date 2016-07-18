@@ -100,7 +100,7 @@ def add_reaction_instantiation( tokens, **kwargs ):
         prdXml.text = prd[1] 
         prds.append( prd[1] )
 
-    nameOfReac = '%s<-->%s' % ('+'.join( subs ), '+'.join( prds ) )
+    nameOfReac = '%s<-->%s' % (','.join( subs ), ','.join( prds ) )
     
     # A simple identifier means reaction is declared elsewhere, a list means
     # that key, value pairs are declared.
