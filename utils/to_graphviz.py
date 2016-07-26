@@ -40,8 +40,10 @@ def yacml_name( elem ):
     path = elem.path
     p = path.replace( '[0]', '' )
     name = "_".join( p.split('/')[-2:] )
+    name = name.replace( '<-', '__' )
+    name = name.replace( '->', '__' )
     names_[name] = elem.path
-    return name
+    return '"%s"' % name
 
 def init_graphviz( modelname ):
     add_to_gv( 'digraph %s { ' % modelname, 0 )
