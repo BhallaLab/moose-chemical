@@ -1,4 +1,4 @@
-recipe simple  is
+recipe SIMPLE  has
     
     species a [ conc = 1e-4, record = N ];
     species b [ conc = 1e-3, record = N ];
@@ -8,13 +8,14 @@ recipe simple  is
 
 end 
 
-cubical compartment small 
+compartment SMALL_COMPT is 
+    cylinder [ length = 100e-9, radius = 50e-9, diffusion_length = 10e-9 ]
 has 
-    simple recipeA;
+    SIMPLE recipeA;
 end 
 
-pathway my_small_model has
-    //well-mixed small s1;
-    diffusive small s1 [ length = 10, diamter = 20 ];
+pathway MY_SMALL_MODEL has
+    stochastic s1 is SMALL_COMPT;
+
     simulator moose [ sim_time = 3000, stochastic = true ];
 end 
