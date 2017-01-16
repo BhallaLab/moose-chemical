@@ -248,7 +248,7 @@ def attach_parateter_to_reac( param, reac, chem_net_path ):
         if debugMode_:
             ft = moose.Table2( '%s/tab_%s' % ( reac.path, fieldName ) )
             moose.connect( ft, 'requestOut', f, 'getValue' )
-            ft.name = get_table_name( reac.name, fieldName )
+            ft.columnName = get_table_name( reac.name, fieldName )
             tables_.append( ft )
 
 
@@ -260,7 +260,7 @@ def attach_table_to_species( moose_pool, field_name ):
     tabPath = '%s/table_%s' % (moose_pool.path, field_name) 
     tab = moose.Table2( tabPath )
     logger_.info( 'Created %s' % tab )
-    tab.name = '%s.%s.%s' % ( current_chemical_subnetwork_name_
+    tab.columnName = '%s.%s.%s' % ( current_chemical_subnetwork_name_
             , moose_pool.name
             , field_name 
             )
