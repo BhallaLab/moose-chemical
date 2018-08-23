@@ -19,5 +19,7 @@
 
 set -o nounset                              # Treat unset variables as an error
 echo "Running test A"
-python ./test/test_bnf_parser.py
+(
+    cd ./test && ./test_all.sh
+)
 
