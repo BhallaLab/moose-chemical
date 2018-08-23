@@ -14,7 +14,7 @@ __email__            = "dilawars@ncbs.res.in"
 __status__           = "Development"
 
 from config import logger_
-import expression
+import yparser.expression
 import re
 import parser
 import ast

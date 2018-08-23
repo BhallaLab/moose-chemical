@@ -23,7 +23,7 @@ import moose
 from math import *
 from config import logger_
 
-funcs = math.__dict__.keys() + [ 'fmod', 'rand', 'rand2' ]
+funcs = list(math.__dict__.keys()) + [ 'fmod', 'rand', 'rand2' ]
 
 def to_bool(arg):
     if arg.lower() in [ "0", "false", "no" ]:

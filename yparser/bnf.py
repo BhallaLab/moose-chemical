@@ -44,7 +44,7 @@ def add_variable( tokens, **kwargs):
     return var
 
 def add_species( tokens, **kwargs ):
-    print tokens
+    print( tokens )
     sp = etree.Element( 'species' )
     sp.attrib['name'] = tokens[2]
     attribs = tokens[3]
@@ -216,7 +216,7 @@ def add_compartment( tokens, **kwargs ):
 # @return Return the AST in XML.
 def parser_main( tokens, **kwargs ):
     global xml_
-    print tokens
+    print( tokens )
     return xml_
 
 

@@ -14,9 +14,8 @@ __email__            = "dilawars@ncbs.res.in"
 __status__           = "Development"
 
 
-import bnf 
+import yparser.bnf  as bnf
 from config import logger_
-import pylab
 import lxml.etree as etree
 
 def parse_text( text ):
